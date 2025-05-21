@@ -1,5 +1,6 @@
 'use client'
-import React, { useCallback } from 'react';
+
+import React, { useCallback, useMemo } from 'react'
 import {
   ReactFlow,
   Background,
@@ -8,32 +9,28 @@ import {
   type Edge,
   useNodesState,
   useEdgesState,
-} from '@xyflow/react';
-import ButtonEdge from '@/components/flow/button-edge';
-import '@xyflow/react/dist/style.css';
-import NodeButtonHandle from '@/components/flow/node-button-handle';
-import CustomBaseNode from '@/components/flow/CustomBaseNode';
+} from '@xyflow/react'
+import { nanoid } from 'nanoid'
+import TriggerNode from '@/components/nodes/TriggerNode'
+import ActionNode from '@/components/nodes/ActionNode'
+import ButtonEdge from '@/components/flow/button-edge'
+
+import '@xyflow/react/dist/style.css'
 
 const initialNodes: Node[] = [
   {
     id: '1',
-    type: 'custombase',
-    data: { label: 'Start Node' },
-    position: { x: 0, y: 0 },
+    type: 'trigger',
+    data: { label: 'Trigger Node' },
+    position: { x: 100, y: 100 },
   },
   {
     id: '2',
-    type: 'custombase',
-    data: { label: 'Second Node' },
-    position: { x: 0, y: 0 },
+    type: 'action',
+    data: { label: 'Action Node 1', message: 'Hello from action 1' },
+    position: { x: 100, y: 300 },
   },
-  {
-    id: '3',
-    type: 'buttonhandle',
-    data: { label: 'Third Node' }, // we will extend this with onAdd
-    position: { x: 0, y: 0 },
-  },
-];
+]
 
 const initialEdges: Edge[] = [
   {
@@ -42,145 +39,115 @@ const initialEdges: Edge[] = [
     target: '2',
     type: 'buttonedge',
   },
-  {
-    id: 'e2-3',
-    source: '2',
-    target: '3',
-    type: 'buttonedge',
-  },
-];
+]
+
+const nodeTypes = {
+  trigger: TriggerNode,
+  action: ActionNode,
+}
 
 const edgeTypes = {
   buttonedge: ButtonEdge,
-};
+}
 
-const nodeTypes = {
-  buttonhandle: NodeButtonHandle,
-  custombase: CustomBaseNode,
-};
-
-//Helper Functions:
-const getAutoPositionedNodes = (nodes: Node[]): Node[] => {
-  const baseX = 100;
-  const spacingY = 200;
-
+const getAutoPositionedNodes = (nodes: Node[]) => {
+  const baseX = 100
+  const spacingY = 200
   return nodes.map((node, index) => ({
     ...node,
     position: { x: baseX, y: 100 + index * spacingY },
-  }));
-};
+  }))
+}
 
 export default function App() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(getAutoPositionedNodes(initialNodes));
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(getAutoPositionedNodes(initialNodes))
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
 
-  const handleAddNode = useCallback(
-    (sourceId: string) => {
-      const newNodeId = `${nodes.length + 1}`;
-      const newNode: Node = {
-        id: newNodeId,
-        type: 'buttonhandle',
-        position: { x: 100, y: 100 + nodes.length * 200 },
-        data: {
-          label: `Node ${newNodeId}`,
-          onAdd: handleAddNode,
-        },
-      };
+  const handleAddNode = useCallback((sourceId: string) => {
+    const newNode: Node = {
+      id: nanoid(),
+      type: 'action',
+      data: {
+        label: 'New Node',
+      },
+      position: { x: 100, y: 100 },
+    }
 
-      const newEdge: Edge = {
-        id: `e${sourceId}-${newNodeId}`,
-        source: sourceId,
-        target: newNodeId,
-        type: 'buttonedge',
-      };
+    const newEdge: Edge = {
+      id: nanoid(),
+      source: sourceId,
+      target: newNode.id,
+      type: 'buttonedge',
+    }
 
-      setNodes((prevNodes) => {
-        const updatedNodes = [
-          ...prevNodes.map((node) =>
-            node.id === sourceId && node.type === 'buttonhandle'
-              ? { ...node, type: 'custombase' }
-              : node
-          ),
-          newNode,
-        ];
-
-        return getAutoPositionedNodes(updatedNodes);
-      });
-
-      setEdges((eds) => [...eds, newEdge]);
-    },
-    [nodes.length, setNodes, setEdges]
-  );
+    setNodes((prev) => getAutoPositionedNodes([...prev, newNode]))
+    setEdges((prev) => [...prev, newEdge])
+  }, [])
 
   const handleRemoveNode = useCallback(
     (nodeId: string) => {
-      console.log('Removing node:', nodeId);
+      const nodeToRemove = nodes.find((n) => n.id === nodeId)
+      if (!nodeToRemove || nodeToRemove.type === 'trigger') return
 
       setEdges((prevEdges) => {
-        // Find all edges connected to the node being removed
-        const incoming = prevEdges.find((e) => e.target === nodeId);
-        const outgoing = prevEdges.find((e) => e.source === nodeId);
+        const incoming = prevEdges.find((e) => e.target === nodeId)
+        const outgoing = prevEdges.find((e) => e.source === nodeId)
 
-        // Remove edges that include the node
-        const filteredEdges = prevEdges.filter(
-          (e) => e.source !== nodeId && e.target !== nodeId
-        );
+        const rest = prevEdges.filter((e) => e.source !== nodeId && e.target !== nodeId)
 
-        // If both incoming and outgoing exist, connect them directly
         if (incoming && outgoing) {
-          const newEdge: Edge = {
-            id: `e${incoming.source}-${outgoing.target}`,
-            source: incoming.source,
-            target: outgoing.target,
-            type: 'buttonedge',
-          };
-          return [...filteredEdges, newEdge];
+          return [
+            ...rest,
+            {
+              id: `e${incoming.source}-${outgoing.target}`,
+              source: incoming.source,
+              target: outgoing.target,
+              type: 'buttonedge',
+            },
+          ]
         }
 
-        return filteredEdges;
-      });
+        return rest
+      })
 
-      setNodes((prevNodes) => {
-        const filtered = prevNodes.filter((node) => node.id !== nodeId);
-        return getAutoPositionedNodes(filtered);
-      });
+      setNodes((prev) => getAutoPositionedNodes(prev.filter((n) => n.id !== nodeId)))
     },
-    [setNodes, setEdges]
-  );
+    [nodes]
+  )
 
+  // Derived final nodes with dynamic flags and handlers
+  const displayNodes = useMemo(() => {
+    const sourcesWithEdges = new Set(edges.map((e) => e.source))
 
-
-  // Inject the onAdd into all buttonhandle nodes
-  const enrichedNodes = nodes.map((node) => {
-    if (node.type === 'buttonhandle' || node.type === 'custombase') {
+    return nodes.map((node) => {
       return {
         ...node,
         data: {
           ...node.data,
           onAdd: handleAddNode,
-          onRemove: handleRemoveNode, // Pass the remove function to the node
+          onRemove: node.type === 'action' ? handleRemoveNode : undefined,
+          hasChildNode: sourcesWithEdges.has(node.id),
         },
-      };
-    }
-    return node;
-  });
+      }
+    })
+  }, [nodes, edges, handleAddNode, handleRemoveNode])
 
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
       <ReactFlow
-        nodes={enrichedNodes}
+        nodes={displayNodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        edgeTypes={edgeTypes}
         nodeTypes={nodeTypes}
-        nodesDraggable={false} // 🚫 disables dragging nodes
-        nodesConnectable={false} // 🚫 disables creating new edges
+        edgeTypes={edgeTypes}
+        nodesDraggable={false}
+        nodesConnectable={false}
         fitView
       >
         <Background />
         <Controls />
       </ReactFlow>
     </div>
-  );
+  )
 }
