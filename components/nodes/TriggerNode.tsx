@@ -30,9 +30,6 @@ export default function TriggerNode({ id, data }: TriggerNodeProps) {
             {data.label || 'Trigger'}
             {/* {" " + id} */}
             <Handle className='invisible' type="target" position={Position.Top} />
-            <Button onClick={handleRemove} className="hover:cursor-pointer" variant="ghost" size="icon">
-                <Trash2 size={16} />
-            </Button>
             <ButtonHandle type="source" position={Position.Bottom} showButton={!data.hasChildNode}>
                 <Button
                     onClick={handleAdd}
