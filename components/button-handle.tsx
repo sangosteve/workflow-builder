@@ -1,3 +1,4 @@
+"use client";
 import { HandleProps, Position } from "@xyflow/react";
 import { BaseHandle } from "@/components/base-handle";
 

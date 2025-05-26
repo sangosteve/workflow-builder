@@ -1,22 +1,21 @@
 import React, { useCallback } from "react";
 import { Handle, Position, useReactFlow, useNodeId } from "@xyflow/react";
-import { Linkedin, MoreVertical, Plus } from "lucide-react";
 import { Button } from "../ui/button";
+import { Plus } from "lucide-react";
 
-interface ActionNodeProps {
+interface StartNodeProps {
   data: {
     label: string;
-    status?: string;
   };
   isConnectable?: boolean;
   selected?: boolean;
 }
 
-export default function ActionNode({
+export default function StartNode({
   data,
   isConnectable = true,
   selected
-}: ActionNodeProps) {
+}: StartNodeProps) {
   const { setNodes, setEdges, getNode, getEdges } = useReactFlow();
   const id = useNodeId();
 
@@ -32,7 +31,7 @@ export default function ActionNode({
     // Create a unique ID for the new node
     const newNodeId = `action-${Date.now()}`;
 
-    // Add another action node (instead of conditional)
+    // Add the new action node (instead of conditional)
     setNodes((nodes) => [
       ...nodes,
       {
@@ -64,23 +63,8 @@ export default function ActionNode({
   return (
     <div className="relative">
       {/* Main node */}
-      <div className={`bg-white rounded-xl shadow-sm p-4 border border-blue-500 ${selected ? 'ring-2 ring-blue-300' : ''}`} style={{ width: '320px' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-50 p-2 rounded-lg">
-              <Linkedin className="text-blue-600 size-5" />
-            </div>
-            <div className="flex flex-col">
-              <div className="font-medium">{data.label}</div>
-              {data.status && (
-                <div className="text-sm text-red-500">{data.status}</div>
-              )}
-            </div>
-          </div>
-          <button className="text-gray-400 hover:text-gray-600 nodrag">
-            <MoreVertical size={18} />
-          </button>
-        </div>
+      <div className={`bg-white rounded-sm shadow-sm p-4 px-8 border ${selected ? 'border-purple-400' : 'border-gray-100'}`}>
+        <div className="text-center font-medium">{data.label}</div>
       </div>
 
       {/* Connection line - only show if no connections */}
@@ -96,32 +80,21 @@ export default function ActionNode({
           <Button
             variant={"ghost"}
             size={"icon"}
-            className="bg-purple-100 rounded-full hover:cursor-pointer w-6 h-6 flex items-center justify-center shadow-sm hover:bg-purple-200 nodrag"
+            className="bg-primary-foreground hover:cursor-pointer rounded-full w-5 h-5 flex items-center justify-center shadow-sm nodrag"
             onClick={handleAddNode}
           >
             <Plus className="text-purple-600 text-sm font-medium" />
           </Button>
-
         </div>
       )}
 
-      {/* Input handle */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        id="in"
-        isConnectable={isConnectable}
-        className="opacity-0"
-        style={{ top: -1 }}
-      />
-
-      {/* Output handle */}
+      {/* Output handle - invisible but functional */}
       <Handle
         type="source"
         position={Position.Bottom}
         id="out"
         isConnectable={isConnectable}
-        className="opacity-0"
+        className="opacity-0" // Make it invisible
         style={{ bottom: -1 }}
       />
     </div>

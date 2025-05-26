@@ -1,153 +1,87 @@
-'use client'
-
-import React, { useCallback, useMemo } from 'react'
+"use client";
+import React, { useCallback, useState } from "react";
 import {
   ReactFlow,
   Background,
   Controls,
-  type Node,
-  type Edge,
-  useNodesState,
-  useEdgesState,
-} from '@xyflow/react'
-import { nanoid } from 'nanoid'
-import TriggerNode from '@/components/nodes/TriggerNode'
-import ActionNode from '@/components/nodes/ActionNode'
-import ButtonEdge from '@/components/flow/button-edge'
-
-import '@xyflow/react/dist/style.css'
+  applyNodeChanges,
+  NodeChange,
+  Node,
+  BackgroundVariant,
+  applyEdgeChanges,
+  EdgeChange,
+  addEdge,
+  Connection,
+  Edge,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import ScheduledTriggerNode from "@/components/nodes/ScheduledTriggerNode";
+import StartNode from "@/components/nodes/StartNode";
+import ActionNode from "@/components/nodes/ActionNode";
+import ButtonEdge from "@/components/edges/ButtonEdge";
+import ConditionalNode from "@/components/nodes/ConditionalNode";
 
 const initialNodes: Node[] = [
   {
-    id: '1',
-    type: 'trigger',
-    data: { label: 'Trigger Node' },
-    position: { x: 100, y: 100 },
-  },
-  {
-    id: '2',
-    type: 'action',
-    data: { label: 'Action Node 1', message: 'Hello from action 1' },
-    position: { x: 100, y: 300 },
-  },
-]
+    id: "start-node",
+    position: { x: 100, y: 50 },
+    data: {
+      label: "Start the campaign"
+    },
+    type: "start-node",
+  }
+];
 
-const initialEdges: Edge[] = [
-  {
-    id: 'e1-2',
-    source: '1',
-    target: '2',
-    type: 'buttonedge',
-  },
-]
+const initialEdges = [];
 
 const nodeTypes = {
-  trigger: TriggerNode,
-  action: ActionNode,
-}
+  "scheduled-trigger": ScheduledTriggerNode,
+  "start-node": StartNode,
+  "action": ActionNode,
+  "conditional": ConditionalNode,
+};
 
 const edgeTypes = {
   buttonedge: ButtonEdge,
-}
+};
 
-const getAutoPositionedNodes = (nodes: Node[]) => {
-  const baseX = 100
-  const spacingY = 200
-  return nodes.map((node, index) => ({
-    ...node,
-    position: { x: baseX, y: 100 + index * spacingY },
-  }))
-}
+export default function Page() {
+  const [nodes, setNodes] = useState<Node[]>(initialNodes);
+  const [edges, setEdges] = useState(initialEdges);
 
-export default function App() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(getAutoPositionedNodes(initialNodes))
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    []
+  );
 
-  const handleAddNode = useCallback((sourceId: string) => {
-    const newNode: Node = {
-      id: nanoid(),
-      type: 'action',
-      data: {
-        label: 'New Node',
-      },
-      position: { x: 100, y: 100 },
-    }
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    []
+  );
 
-    const newEdge: Edge = {
-      id: nanoid(),
-      source: sourceId,
-      target: newNode.id,
-      type: 'buttonedge',
-    }
-
-    setNodes((prev) => getAutoPositionedNodes([...prev, newNode]))
-    setEdges((prev) => [...prev, newEdge])
-  }, [])
-
-  const handleRemoveNode = useCallback(
-    (nodeId: string) => {
-      const nodeToRemove = nodes.find((n) => n.id === nodeId)
-      if (!nodeToRemove || nodeToRemove.type === 'trigger') return
-
-      setEdges((prevEdges) => {
-        const incoming = prevEdges.find((e) => e.target === nodeId)
-        const outgoing = prevEdges.find((e) => e.source === nodeId)
-
-        const rest = prevEdges.filter((e) => e.source !== nodeId && e.target !== nodeId)
-
-        if (incoming && outgoing) {
-          return [
-            ...rest,
-            {
-              id: `e${incoming.source}-${outgoing.target}`,
-              source: incoming.source,
-              target: outgoing.target,
-              type: 'buttonedge',
-            },
-          ]
-        }
-
-        return rest
-      })
-
-      setNodes((prev) => getAutoPositionedNodes(prev.filter((n) => n.id !== nodeId)))
-    },
-    [nodes]
-  )
-
-  // Derived final nodes with dynamic flags and handlers
-  const displayNodes = useMemo(() => {
-    const sourcesWithEdges = new Set(edges.map((e) => e.source))
-
-    return nodes.map((node) => {
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          onAdd: handleAddNode,
-          onRemove: node.type === 'action' ? handleRemoveNode : undefined,
-          hasChildNode: sourcesWithEdges.has(node.id),
-        },
-      }
-    })
-  }, [nodes, edges, handleAddNode, handleRemoveNode])
+  const onConnect = useCallback(
+    (connection: Connection) => setEdges((eds) => addEdge({
+      ...connection,
+      type: 'buttonedge'  // Use our custom edge type for all connections
+    }, eds)),
+    []
+  );
 
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
+    <div className="w-screen h-screen relative">
       <ReactFlow
-        nodes={displayNodes}
+        nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        nodesDraggable={false}
-        nodesConnectable={false}
         fitView
       >
-        <Background />
-        <Controls />
+        <Controls position="top-left" />
+        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
     </div>
-  )
+  );
 }
