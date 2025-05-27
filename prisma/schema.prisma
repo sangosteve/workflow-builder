@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// generator client {
+//   provider = "prisma-client-js"
+//   output   = "../lib/generated/prisma"
+// }
+
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // use Neon Postgres URL
+}
+
+model Workflow {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  status        WorkflowStatus @default(DRAFT)
+  triggersCount Int            @default(0)
+  actionsCount  Int            @default(0)
+  lastEdited    DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+
+  nodes        Node[]
+  edges        Edge[]
+  workflowRuns WorkflowRun[]
+}
+
+model Node {
+  id         String   @id @default(uuid())
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId String
+
+  type      NodeType
+  label     String?
+  positionX Float
+  positionY Float
+  createdAt DateTime @default(now())
+
+  config        NodeConfig?
+  incoming      Edge[]         @relation("TargetNode")
+  outgoing      Edge[]         @relation("SourceNode")
+  executionLogs ExecutionLog[]
+}
+
+model NodeConfig {
+  id     String @id @default(uuid())
+  node   Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  nodeId String @unique
+  config Json
+}
+
+model Edge {
+  id         String   @id @default(uuid())
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId String
+
+  sourceNode   Node   @relation("SourceNode", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  sourceNodeId String
+
+  targetNode   Node   @relation("TargetNode", fields: [targetNodeId], references: [id], onDelete: Cascade)
+  targetNodeId String
+
+  label     String?
+  condition String?
+  createdAt DateTime @default(now())
+}
+
+model WorkflowRun {
+  id          String    @id @default(uuid())
+  workflow    Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId  String
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  status      RunStatus @default(RUNNING)
+
+  executionLogs ExecutionLog[]
+}
+
+model ExecutionLog {
+  id            String      @id @default(uuid())
+  workflowRun   WorkflowRun @relation(fields: [workflowRunId], references: [id], onDelete: Cascade)
+  workflowRunId String
+
+  node   Node?   @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  nodeId String?
+
+  status    ExecutionStatus
+  message   String?
+  startedAt DateTime?
+  endedAt   DateTime?
+}
+
+enum WorkflowStatus {
+  ACTIVE
+  DRAFT
+  PAUSED
+}
+
+enum NodeType {
+  TRIGGER
+  ACTION
+  CONDITION
+}
+
+enum RunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum ExecutionStatus {
+  PENDING
+  SUCCESS
+  ERROR
+}
