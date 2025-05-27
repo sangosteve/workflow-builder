@@ -1,12 +1,15 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Handle, Position, useReactFlow, useNodeId } from "@xyflow/react";
-import { Linkedin, MoreVertical, Plus } from "lucide-react";
-import { Button } from "../ui/button";
+import { Instagram, MoreVertical, MessageCircle, Reply, UserPlus } from "lucide-react";
+import AddNodeButton from "../AddNodeButton";
+import ActionNodeSheet from "../ActionNodeSheet";
 
 interface ActionNodeProps {
   data: {
     label: string;
     status?: string;
+    actionType?: string;
+    message?: string;
   };
   isConnectable?: boolean;
   selected?: boolean;
@@ -19,11 +22,12 @@ export default function ActionNode({
 }: ActionNodeProps) {
   const { setNodes, setEdges, getNode, getEdges } = useReactFlow();
   const id = useNodeId();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Check if this node has any outgoing connections
   const hasConnections = getEdges().some(edge => edge.source === id);
 
-  const handleAddNode = useCallback(() => {
+  const handleAddNode = useCallback((actionType: string) => {
     if (!id) return;
 
     const parentNode = getNode(id);
@@ -32,7 +36,28 @@ export default function ActionNode({
     // Create a unique ID for the new node
     const newNodeId = `action-${Date.now()}`;
 
-    // Add another action node (instead of conditional)
+    // Get label and status based on action type
+    let label = '';
+    let status = 'Action required';
+
+    switch (actionType) {
+      case 'direct-message':
+        label = 'Send Direct Message';
+        status = 'Message to be sent';
+        break;
+      case 'reply-comment':
+        label = 'Reply to Comment';
+        status = 'Reply to be posted';
+        break;
+      case 'follow-user':
+        label = 'Follow User';
+        status = 'User to be followed';
+        break;
+      default:
+        label = 'Instagram Action';
+    }
+
+    // Add another action node
     setNodes((nodes) => [
       ...nodes,
       {
@@ -43,8 +68,9 @@ export default function ActionNode({
           y: parentNode.position.y + 120, // Position below the current node
         },
         data: {
-          label: 'Send email notification',
-          status: 'Action required'
+          label,
+          status,
+          actionType
         },
       },
     ]);
@@ -61,23 +87,75 @@ export default function ActionNode({
     ]);
   }, [id, getNode, setNodes, setEdges]);
 
+  // Determine which icon to show based on action type
+  const getActionIcon = () => {
+    switch (data.actionType) {
+      case 'direct-message':
+        return <MessageCircle className="text-white size-5" />;
+      case 'reply-comment':
+        return <Reply className="text-white size-5" />;
+      case 'follow-user':
+        return <UserPlus className="text-white size-5" />;
+      default:
+        return <Instagram className="text-white size-5" />;
+    }
+  };
+
+  const handleNodeClick = (event: React.MouseEvent) => {
+    // Prevent the click from propagating to the flow
+    event.stopPropagation();
+    setIsSheetOpen(true);
+  };
+
+  const handleUpdateNodeData = (updatedData: any) => {
+    if (!id) return;
+    
+    setNodes((nodes) =>
+      nodes.map((node) => {
+        if (node.id === id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              ...updatedData
+            }
+          };
+        }
+        return node;
+      })
+    );
+  };
+
+  // Display the message if available, otherwise show the status
+  const displayStatus = data.message || data.status;
+
   return (
     <div className="relative">
       {/* Main node */}
-      <div className={`bg-white rounded-xl shadow-sm p-4 border border-blue-500 ${selected ? 'ring-2 ring-blue-300' : ''}`} style={{ width: '320px' }}>
+      <div 
+        className={`bg-white rounded-xl shadow-sm p-4 hover:cursor-pointer border border-pink-400 ${selected ? 'ring-2 ring-pink-300' : ''}`} 
+        style={{ width: '320px' }}
+        onClick={handleNodeClick}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-50 p-2 rounded-lg">
-              <Linkedin className="text-blue-600 size-5" />
+            <div className="bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-2 rounded-lg">
+              {getActionIcon()}
             </div>
             <div className="flex flex-col">
               <div className="font-medium">{data.label}</div>
-              {data.status && (
-                <div className="text-sm text-red-500">{data.status}</div>
+              {displayStatus && (
+                <div className="text-sm text-gray-600">{displayStatus}</div>
               )}
             </div>
           </div>
-          <button className="text-gray-400 hover:text-gray-600 nodrag">
+          <button 
+            className="text-gray-400 hover:text-gray-600 nodrag"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Handle more options menu
+            }}
+          >
             <MoreVertical size={18} />
           </button>
         </div>
@@ -93,15 +171,7 @@ export default function ActionNode({
       {/* Plus button - only show if no connections */}
       {!hasConnections && (
         <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 'calc(100% + 50px)' }}>
-          <Button
-            variant={"ghost"}
-            size={"icon"}
-            className="bg-purple-100 rounded-full hover:cursor-pointer w-6 h-6 flex items-center justify-center shadow-sm hover:bg-purple-200 nodrag"
-            onClick={handleAddNode}
-          >
-            <Plus className="text-purple-600 text-sm font-medium" />
-          </Button>
-
+          <AddNodeButton onAddNode={handleAddNode} />
         </div>
       )}
 
@@ -124,6 +194,16 @@ export default function ActionNode({
         className="opacity-0"
         style={{ bottom: -1 }}
       />
+
+      {/* Action Node Sheet */}
+      {isSheetOpen && (
+        <ActionNodeSheet 
+          isOpen={isSheetOpen} 
+          onClose={() => setIsSheetOpen(false)} 
+          data={data} 
+          onUpdate={handleUpdateNodeData} 
+        />
+      )}
     </div>
   );
 }

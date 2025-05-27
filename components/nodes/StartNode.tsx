@@ -1,7 +1,6 @@
 import React, { useCallback } from "react";
 import { Handle, Position, useReactFlow, useNodeId } from "@xyflow/react";
-import { Button } from "../ui/button";
-import { Plus } from "lucide-react";
+import AddNodeButton from "../AddNodeButton";
 
 interface StartNodeProps {
   data: {
@@ -22,7 +21,7 @@ export default function StartNode({
   // Check if this node has any outgoing connections
   const hasConnections = getEdges().some(edge => edge.source === id);
 
-  const handleAddNode = useCallback(() => {
+  const handleAddNode = useCallback((actionType: string) => {
     if (!id) return;
 
     const parentNode = getNode(id);
@@ -31,7 +30,28 @@ export default function StartNode({
     // Create a unique ID for the new node
     const newNodeId = `action-${Date.now()}`;
 
-    // Add the new action node (instead of conditional)
+    // Get label and status based on action type
+    let label = '';
+    let status = 'Action required';
+    
+    switch (actionType) {
+      case 'direct-message':
+        label = 'Send Direct Message';
+        status = 'Message to be sent';
+        break;
+      case 'reply-comment':
+        label = 'Reply to Comment';
+        status = 'Reply to be posted';
+        break;
+      case 'follow-user':
+        label = 'Follow User';
+        status = 'User to be followed';
+        break;
+      default:
+        label = 'Instagram Action';
+    }
+
+    // Add the new action node
     setNodes((nodes) => [
       ...nodes,
       {
@@ -42,8 +62,9 @@ export default function StartNode({
           y: parentNode.position.y + 120, // Position below the current node
         },
         data: {
-          label: 'Send email notification',
-          status: 'Action required'
+          label,
+          status,
+          actionType
         },
       },
     ]);
@@ -77,14 +98,7 @@ export default function StartNode({
       {/* Plus button - only show if no connections */}
       {!hasConnections && (
         <div className="absolute left-1/2 -translate-x-1/2" style={{ top: 'calc(100% + 50px)' }}>
-          <Button
-            variant={"ghost"}
-            size={"icon"}
-            className="bg-primary-foreground hover:cursor-pointer rounded-full w-5 h-5 flex items-center justify-center shadow-sm nodrag"
-            onClick={handleAddNode}
-          >
-            <Plus className="text-purple-600 text-sm font-medium" />
-          </Button>
+          <AddNodeButton onAddNode={handleAddNode} />
         </div>
       )}
 

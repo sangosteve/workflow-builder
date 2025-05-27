@@ -16,27 +16,28 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import ScheduledTriggerNode from "@/components/nodes/ScheduledTriggerNode";
-import StartNode from "@/components/nodes/StartNode";
+import TriggerNode from "@/components/nodes/TriggerNode";
 import ActionNode from "@/components/nodes/ActionNode";
-import ButtonEdge from "@/components/edges/ButtonEdge";
 import ConditionalNode from "@/components/nodes/ConditionalNode";
+import ButtonEdge from "@/components/edges/ButtonEdge";
 
 const initialNodes: Node[] = [
   {
-    id: "start-node",
+    id: "trigger-node",
     position: { x: 100, y: 50 },
     data: {
-      label: "Start the campaign"
+      label: "Instagram Trigger",
+      triggerType: "follow"
     },
-    type: "start-node",
+    type: "trigger",
   }
 ];
 
-const initialEdges = [];
+const initialEdges: Edge[] = [];
 
 const nodeTypes = {
   "scheduled-trigger": ScheduledTriggerNode,
-  "start-node": StartNode,
+  "trigger": TriggerNode,
   "action": ActionNode,
   "conditional": ConditionalNode,
 };

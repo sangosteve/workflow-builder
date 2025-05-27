@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
 import { EdgeProps, getBezierPath, useReactFlow } from "@xyflow/react";
+import AddNodeButton from "../AddNodeButton";
 import { Button } from "../ui/button";
 import { Plus } from "lucide-react";
 
@@ -27,9 +28,30 @@ export default function ButtonEdge({
     targetPosition,
   });
 
-  const handleAddNode = useCallback(() => {
+  const handleAddNode = useCallback((actionType: string) => {
     // Create a unique ID for the new node
     const newNodeId = `action-${Date.now()}`;
+
+    // Get label and status based on action type
+    let label = '';
+    let status = 'Action required';
+    
+    switch (actionType) {
+      case 'direct-message':
+        label = 'Send Direct Message';
+        status = 'Message to be sent';
+        break;
+      case 'reply-comment':
+        label = 'Reply to Comment';
+        status = 'Reply to be posted';
+        break;
+      case 'follow-user':
+        label = 'Follow User';
+        status = 'User to be followed';
+        break;
+      default:
+        label = 'Instagram Action';
+    }
 
     // Add the new action node at the midpoint between source and target
     setNodes((nodes) => [
@@ -42,8 +64,9 @@ export default function ButtonEdge({
           y: (sourceY + targetY) / 2, // Position at the midpoint vertically
         },
         data: {
-          label: 'Send email notification',
-          status: 'Action required'
+          label,
+          status,
+          actionType
         },
       },
     ]);
@@ -81,24 +104,17 @@ export default function ButtonEdge({
 
       {/* Plus button in the middle of the edge */}
       <foreignObject
-        width={20}
-        height={20}
-        x={labelX - 10}
-        y={labelY - 10}
+        width={40}
+        height={40}
+        x={labelX - 20}
+        y={labelY - 20}
         className="edgebutton-foreignobject"
         requiredExtensions="http://www.w3.org/1999/xhtml"
       >
-        <div>
-          <Button
-            size={"icon"}
-            className="bg-purple-100 rounded-full w-5 h-5 flex items-center justify-center shadow-sm hover:bg-purple-200 border border-purple-200"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleAddNode();
-            }}
-          >
-            <Plus className="text-purple-600 text-sm font-medium" />
-          </Button>
+        <div className="flex items-center justify-center w-full h-full">
+          <div className="relative">
+            <AddNodeButton onAddNode={handleAddNode} />
+          </div>
         </div>
       </foreignObject>
     </>
