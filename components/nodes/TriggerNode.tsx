@@ -1,20 +1,21 @@
+import TriggerNodeSheet from "../TriggerNodeSheet";
+import AddNodeButton from "../AddNodeButton";
 import React, { useCallback, useState } from "react";
 import { Handle, Position, useReactFlow, useNodeId } from "@xyflow/react";
 import { Instagram, MoreVertical, UserPlus, MessageSquare, Heart, MessageCircle } from "lucide-react";
-import AddNodeButton from "../AddNodeButton";
-import TriggerNodeSheet from "../TriggerNodeSheet";
+import { createNode, createEdge } from "@/lib/api-hooks";
 
-interface TriggerNodeProps {
+type TriggerNodeProps = {
   data: {
-    id?: string;
     label?: string;
-    triggerType?: string;
     description?: string;
+    triggerType?: string;
     workflowId?: string;
+    [key: string]: any;
   };
   isConnectable?: boolean;
   selected?: boolean;
-}
+};
 
 export default function TriggerNode({
   data,
@@ -28,7 +29,7 @@ export default function TriggerNode({
   // Check if this node has any outgoing connections
   const hasConnections = getEdges().some(edge => edge.source === id);
 
-  const handleAddNode = useCallback((actionType: string) => {
+  const handleAddNode = useCallback(async (actionType: string) => {
     if (!id) return;
 
     const parentNode = getNode(id);
@@ -58,7 +59,7 @@ export default function TriggerNode({
         label = 'Instagram Action';
     }
 
-    // Add the new action node
+    // Add the new action node to the UI
     setNodes((nodes) => [
       ...nodes,
       {
@@ -72,12 +73,12 @@ export default function TriggerNode({
           label,
           status,
           actionType,
-          workflowId: data.workflowId // Pass the workflowId to the new node
+          workflowId: data.workflowId
         },
       },
     ]);
 
-    // Add an edge connecting the current node to the new node
+    // Add an edge connecting the current node to the new node in the UI
     setEdges((edges) => [
       ...edges,
       {
@@ -87,6 +88,62 @@ export default function TriggerNode({
         type: 'buttonedge', // Use our custom edge type
       },
     ]);
+
+    // If we have a workflowId, create the node and edge in the database
+    if (data.workflowId) {
+      try {
+        console.log("Creating node with workflowId:", data.workflowId);
+        console.log("Source node ID:", id);
+
+        // Create the node in the database
+        const createdNode = await createNode({
+          workflowId: data.workflowId,
+          type: 'ACTION',
+          label,
+          positionX: parentNode.position.x,
+          positionY: parentNode.position.y + 120,
+          config: {
+            actionType,
+            status
+          }
+        });
+
+        console.log("Created node in database:", createdNode);
+
+        // Create the edge in the database
+        const edgeData = {
+          workflowId: data.workflowId,
+          sourceNodeId: id,
+          targetNodeId: createdNode.id,
+          label: "",
+          condition: ""
+        };
+
+        console.log("Creating edge with data:", edgeData);
+
+        await createEdge(edgeData);
+
+        // Update the node ID in the UI to match the database ID
+        setNodes((nodes) =>
+          nodes.map((node) =>
+            node.id === newNodeId
+              ? { ...node, id: createdNode.id }
+              : node
+          )
+        );
+
+        // Update the edge in the UI to use the new node ID
+        setEdges((edges) =>
+          edges.map((edge) =>
+            edge.id === `${id}-${newNodeId}`
+              ? { ...edge, id: `${id}-${createdNode.id}`, target: createdNode.id }
+              : edge
+          )
+        );
+      } catch (error) {
+        console.error("Failed to create node or edge in database:", error);
+      }
+    }
   }, [id, getNode, setNodes, setEdges, data.workflowId]);
 
   const handleNodeClick = (event: React.MouseEvent) => {
@@ -105,9 +162,7 @@ export default function TriggerNode({
             ...node,
             data: {
               ...node.data,
-              ...updatedData,
-              id: data.id, // Preserve the database ID
-              workflowId: data.workflowId // Preserve the workflowId
+              ...updatedData
             }
           };
         }
@@ -191,13 +246,7 @@ export default function TriggerNode({
         <TriggerNodeSheet
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
-          data={{
-            id: id || "", // Pass the database ID explicitly
-            label: data.label,
-            triggerType: data.triggerType,
-            description: data.description,
-            workflowId: data.workflowId
-          }}
+          data={data}
           onUpdate={handleUpdateNodeData}
         />
       )}

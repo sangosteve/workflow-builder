@@ -3,6 +3,7 @@ import { Handle, Position, useReactFlow, useNodeId } from "@xyflow/react";
 import { Instagram, MoreVertical, MessageCircle, Reply, UserPlus } from "lucide-react";
 import AddNodeButton from "../AddNodeButton";
 import ActionNodeSheet from "../ActionNodeSheet";
+import { createNode, createEdge } from "@/lib/api-hooks";
 
 interface ActionNodeProps {
   data: {
@@ -10,6 +11,7 @@ interface ActionNodeProps {
     status?: string;
     actionType?: string;
     message?: string;
+    workflowId?: string; // Ensure workflowId is included in the data prop
   };
   isConnectable?: boolean;
   selected?: boolean;
@@ -27,7 +29,7 @@ export default function ActionNode({
   // Check if this node has any outgoing connections
   const hasConnections = getEdges().some(edge => edge.source === id);
 
-  const handleAddNode = useCallback((actionType: string) => {
+  const handleAddNode = useCallback(async (actionType: string) => {
     if (!id) return;
 
     const parentNode = getNode(id);
@@ -57,7 +59,7 @@ export default function ActionNode({
         label = 'Instagram Action';
     }
 
-    // Add another action node
+    // Add another action node to the UI
     setNodes((nodes) => [
       ...nodes,
       {
@@ -70,12 +72,13 @@ export default function ActionNode({
         data: {
           label,
           status,
-          actionType
+          actionType,
+          workflowId: data.workflowId
         },
       },
     ]);
 
-    // Add an edge connecting the current node to the new node
+    // Add an edge connecting the current node to the new node in the UI
     setEdges((edges) => [
       ...edges,
       {
@@ -85,7 +88,56 @@ export default function ActionNode({
         type: 'buttonedge', // Use our custom edge type
       },
     ]);
-  }, [id, getNode, setNodes, setEdges]);
+
+    // If we have a workflowId, create the node and edge in the database
+    if (data.workflowId) {
+      try {
+        // Create the node in the database
+        const createdNode = await createNode({
+          workflowId: data.workflowId,
+          type: 'ACTION',
+          label,
+          positionX: parentNode.position.x,
+          positionY: parentNode.position.y + 120,
+          config: {
+            actionType,
+            status
+          }
+        });
+
+        console.log("Created node in database:", createdNode);
+
+        // Create the edge in the database
+        await createEdge({
+          workflowId: data.workflowId,
+          sourceNodeId: id,
+          targetNodeId: createdNode.id,
+          label: "",
+          condition: ""
+        });
+
+        // Update the node ID in the UI to match the database ID
+        setNodes((nodes) => 
+          nodes.map((node) => 
+            node.id === newNodeId 
+              ? { ...node, id: createdNode.id } 
+              : node
+          )
+        );
+
+        // Update the edge in the UI to use the new node ID
+        setEdges((edges) => 
+          edges.map((edge) => 
+            edge.id === `${id}-${newNodeId}` 
+              ? { ...edge, id: `${id}-${createdNode.id}`, target: createdNode.id } 
+              : edge
+          )
+        );
+      } catch (error) {
+        console.error("Failed to create node or edge in database:", error);
+      }
+    }
+  }, [id, getNode, setNodes, setEdges, data.workflowId]);
 
   // Determine which icon to show based on action type
   const getActionIcon = () => {

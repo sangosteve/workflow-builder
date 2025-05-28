@@ -22,7 +22,7 @@ import ActionNode from "@/components/nodes/ActionNode";
 import ConditionalNode from "@/components/nodes/ConditionalNode";
 import ButtonEdge from "@/components/edges/ButtonEdge";
 import { transformDbNodesToReactFlow, transformDbEdgesToReactFlow } from "@/lib/transformNodes";
-import { useWorkflowNodes, useWorkflowEdges } from "@/lib/api-hooks";
+import { useWorkflowNodes, useWorkflowEdges, useCreateEdge, createEdge } from "@/lib/api-hooks";
 
 interface WorkflowEditorProps {
   workflowId?: string;
@@ -67,18 +67,30 @@ export default function WorkflowEditor({
     error: edgesError 
   } = useWorkflowEdges(workflowId || '');
 
+  const createEdgeMutation = useCreateEdge();
+
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [isLoading, setIsLoading] = useState(!!workflowId);
 
   // Effect to transform DB nodes to ReactFlow nodes when data is loaded
   useEffect(() => {
-    if (dbNodes) {
+    if (dbNodes && workflowId) {
       const reactFlowNodes = transformDbNodesToReactFlow(dbNodes);
-      setNodes(reactFlowNodes);
+      
+      // Ensure all nodes have the workflowId in their data
+      const nodesWithWorkflowId = reactFlowNodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          workflowId
+        }
+      }));
+      
+      setNodes(nodesWithWorkflowId);
       setIsLoading(false);
     }
-  }, [dbNodes]);
+  }, [dbNodes, workflowId]);
 
   // Effect to transform DB edges to ReactFlow edges when data is loaded
   useEffect(() => {
@@ -111,40 +123,46 @@ export default function WorkflowEditor({
   );
 
   const onConnect = useCallback(
-    (connection: Connection) => {
-      const updatedEdges = addEdge({
+    async (connection: Connection) => {
+      // Add the edge to the React Flow instance first
+      const newEdge = {
         ...connection,
-        type: 'buttonedge'  // Use our custom edge type for all connections
-      }, edges);
+        id: `e-${connection.source}-${connection.target}-${Date.now()}`,
+        type: 'buttonedge',  // Use our custom edge type for all connections
+      };
+      
+      const updatedEdges = addEdge(newEdge, edges);
       setEdges(updatedEdges);
-      if (externalEdgesChange) {
-        externalEdgesChange(updatedEdges);
+      
+      // If we have a workflowId, also create the edge in the database
+      if (workflowId) {
+        try {
+          console.log("Creating edge in database with data:", {
+            workflowId,
+            sourceNodeId: connection.source,
+            targetNodeId: connection.target,
+          });
+          
+          await createEdge({
+            workflowId,
+            sourceNodeId: connection.source,
+            targetNodeId: connection.target,
+            label: "",  // Default empty label
+            condition: ""  // Default empty condition
+          });
+        } catch (error) {
+          console.error("Failed to create edge in database:", error);
+          // Optionally revert the edge in the UI if the API call fails
+          setEdges(edges);
+        }
       }
     },
-    [edges, externalEdgesChange]
+    [workflowId, edges, setEdges]
   );
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center w-full h-full">
-        <div className="text-lg">Loading workflow...</div>
-      </div>
-    );
-  }
-
-  // Show error state if there was an error loading nodes
-  if (nodesError) {
-    return (
-      <div className="flex items-center justify-center w-full h-full">
-        <div className="text-lg text-red-500">Error loading workflow nodes</div>
-      </div>
-    );
-  }
 
   return (
     <ReactFlowProvider>
-      <div className={`w-full ${className}`}>
+      <div className={className}>
         <ReactFlow
           nodes={nodes}
           edges={edges}

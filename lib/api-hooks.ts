@@ -16,13 +16,10 @@ interface Node {
 	id: string;
 	workflowId: string;
 	type: string;
-	label?: string;
+	label: string;
 	positionX: number;
 	positionY: number;
-	createdAt: string;
 	config?: {
-		id: string;
-		nodeId: string;
 		config: any;
 	};
 }
@@ -55,17 +52,21 @@ async function fetchWorkflow(id: string): Promise<Workflow> {
 }
 
 async function fetchWorkflowNodes(workflowId: string): Promise<Node[]> {
-	const response = await fetch(`/api/workflows/${workflowId}/nodes`);
+	if (!workflowId) return [];
+	
+	const response = await fetch(`/api/nodes?workflowId=${workflowId}`);
 	if (!response.ok) {
-		throw new Error("Failed to fetch workflow nodes");
+		throw new Error("Failed to fetch nodes");
 	}
 	return response.json();
 }
 
 async function fetchWorkflowEdges(workflowId: string): Promise<Edge[]> {
-	const response = await fetch(`/api/workflows/${workflowId}/edges`);
+	if (!workflowId) return [];
+	
+	const response = await fetch(`/api/edges?workflowId=${workflowId}`);
 	if (!response.ok) {
-		throw new Error("Failed to fetch workflow edges");
+		throw new Error("Failed to fetch edges");
 	}
 	return response.json();
 }
@@ -80,7 +81,8 @@ async function createNode(nodeData: any): Promise<Node> {
 	});
 
 	if (!response.ok) {
-		throw new Error("Failed to create node");
+		const errorData = await response.json();
+		throw new Error(errorData.error || "Failed to create node");
 	}
 
 	return response.json();
@@ -112,7 +114,8 @@ async function createEdge(edgeData: any): Promise<Edge> {
 	});
 
 	if (!response.ok) {
-		throw new Error("Failed to create edge");
+		const errorData = await response.json();
+		throw new Error(errorData.error || "Failed to create edge");
 	}
 
 	return response.json();
@@ -136,7 +139,7 @@ export function useWorkflow(id: string) {
 
 export function useWorkflowNodes(workflowId: string) {
 	return useQuery({
-		queryKey: ["workflow", workflowId, "nodes"],
+		queryKey: ["workflowNodes", workflowId],
 		queryFn: () => fetchWorkflowNodes(workflowId),
 		enabled: !!workflowId,
 	});
@@ -144,7 +147,7 @@ export function useWorkflowNodes(workflowId: string) {
 
 export function useWorkflowEdges(workflowId: string) {
 	return useQuery({
-		queryKey: ["workflow", workflowId, "edges"],
+		queryKey: ["workflowEdges", workflowId],
 		queryFn: () => fetchWorkflowEdges(workflowId),
 		enabled: !!workflowId,
 	});
@@ -158,7 +161,7 @@ export function useCreateNode() {
 		onSuccess: (data) => {
 			// Invalidate and refetch nodes for this workflow
 			queryClient.invalidateQueries({
-				queryKey: ["workflow", data.workflowId, "nodes"],
+				queryKey: ["workflowNodes", data.workflowId],
 			});
 			// Also update the workflow to reflect updated counts
 			queryClient.invalidateQueries({
@@ -172,12 +175,11 @@ export function useUpdateNode() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({ id, data }: { id: string; data: any }) =>
-			updateNode(id, data),
+		mutationFn: ({ id, data }: { id: string; data: any }) => updateNode(id, data),
 		onSuccess: (data) => {
 			// Invalidate and refetch nodes for this workflow
 			queryClient.invalidateQueries({
-				queryKey: ["workflow", data.workflowId, "nodes"],
+				queryKey: ["workflowNodes", data.workflowId],
 			});
 		},
 	});
@@ -191,8 +193,10 @@ export function useCreateEdge() {
 		onSuccess: (data) => {
 			// Invalidate and refetch edges for this workflow
 			queryClient.invalidateQueries({
-				queryKey: ["workflow", data.workflowId, "edges"],
+				queryKey: ["workflowEdges", data.workflowId],
 			});
 		},
 	});
 }
+
+export { createNode, createEdge };
