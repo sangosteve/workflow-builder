@@ -1,133 +1,291 @@
 import React, { useState } from "react";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle
+} from "./ui/sheet";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { Instagram, UserPlus, MessageSquare, Heart, MessageCircle } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { toast } from "sonner";
+import {
+  ChevronsUpDown,
+  Search,
+  UserPlus,
+  MessageSquare,
+  Heart,
+  MessageCircle,
+  Tag,
+  List,
+  Users,
+  Bell
+} from "lucide-react";
+import { Input } from "./ui/input";
+import {
+  Command,
+  CommandEmpty,
+  CommandItem,
+  CommandList,
+} from "./ui/command";
 
 interface TriggerNodeSheetProps {
   isOpen: boolean;
   onClose: () => void;
   data: {
-    label: string;
+    id?: string;
+    label?: string;
     triggerType?: string;
     description?: string;
   };
-  onUpdate: (updatedData: any) => void;
+  onUpdate: (data: any) => void;
 }
 
-export default function TriggerNodeSheet({ 
-  isOpen, 
-  onClose, 
+// Define trigger event options with categories and icons
+const triggerEvents = [
+  // Instagram triggers
+  {
+    value: "follow",
+    label: "New Follower",
+    description: "Triggers when someone follows your account.",
+    category: "Instagram",
+    type: "Instant",
+    icon: UserPlus
+  },
+  {
+    value: "comment",
+    label: "New Comment",
+    description: "Triggers when someone comments on your post.",
+    category: "Instagram",
+    type: "Polling",
+    icon: MessageSquare
+  },
+  {
+    value: "like",
+    label: "New Like",
+    description: "Triggers when someone likes your post.",
+    category: "Instagram",
+    type: "Polling",
+    icon: Heart
+  },
+  {
+    value: "direct-message",
+    label: "New Direct Message",
+    description: "Triggers when you receive a direct message.",
+    category: "Instagram",
+    type: "Polling",
+    icon: MessageCircle
+  },
+
+  // Trello-like triggers
+  {
+    value: "new-label",
+    label: "New Label",
+    description: "Triggers when a new label is created.",
+    category: "Trello",
+    type: "Polling",
+    icon: Tag
+  },
+  {
+    value: "label-added-to-card",
+    label: "New Label Added to Card",
+    description: "Triggers when a label is added in a card.",
+    category: "Trello",
+    type: "Instant",
+    icon: Tag
+  },
+  {
+    value: "new-list",
+    label: "New List",
+    description: "Triggers when a new list on a board is added.",
+    category: "Trello",
+    type: "Polling",
+    icon: List
+  },
+  {
+    value: "new-member",
+    label: "New Member on Board",
+    description: "Triggers when a new member joins a board.",
+    category: "Trello",
+    type: "Polling",
+    icon: Users
+  },
+  {
+    value: "new-notification",
+    label: "New Notification",
+    description: "Triggers when you get a new notification.",
+    category: "Trello",
+    type: "Polling",
+    icon: Bell
+  },
+];
+
+export default function TriggerNodeSheet({
+  isOpen,
+  onClose,
   data,
   onUpdate
 }: TriggerNodeSheetProps) {
-  const [triggerType, setTriggerType] = useState(data.triggerType || "follow");
-  
-  const handleSave = () => {
-    let label = "Instagram Trigger";
-    let description = "";
-    
-    switch (triggerType) {
-      case "follow":
-        label = "New Follower";
-        description = "When a user follows your account";
-        break;
-      case "comment":
-        label = "New Comment";
-        description = "When a user comments on your post";
-        break;
-      case "like":
-        label = "New Like";
-        description = "When a user likes your post";
-        break;
-      case "direct-message":
-        label = "New Direct Message";
-        description = "When a user sends you a DM";
-        break;
-    }
-    
-    onUpdate({ 
-      ...data,
-      label,
+  const [label, setLabel] = useState(data.label || "");
+  const [triggerType, setTriggerType] = useState(data.triggerType || "");
+  const [description, setDescription] = useState(data.description || "");
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [comboboxOpen, setComboboxOpen] = useState(false);
+
+  // Get the selected trigger event details
+  const selectedTrigger = triggerEvents.find(event => event.value === triggerType);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const updatedData = {
+      label: selectedTrigger?.label || "Trigger",
       triggerType,
-      description
-    });
-    onClose();
+      description: selectedTrigger?.description || "",
+    };
+
+    try {
+      // If we have a node ID in the database, update it via API
+      if (data.id) {
+        const response = await fetch(`/api/nodes/${data.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            label: updatedData.label,
+            type: "TRIGGER",
+            config: {
+              triggerType,
+              description: updatedData.description
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to update node");
+        }
+      }
+
+      // Update the node in the React Flow instance
+      onUpdate(updatedData);
+
+      toast.success("Trigger node updated successfully");
+
+      onClose();
+    } catch (error) {
+      console.error("Error updating node:", error);
+      toast.error(`Failed to update trigger node: ${(error as Error).message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // Filter events based on search query
+  const filteredEvents = searchQuery
+    ? triggerEvents.filter(event =>
+      event.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.category.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    : triggerEvents;
+
+  if (!isOpen) return null;
+
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
+    <Sheet defaultOpen={true} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>Configure Trigger</SheetTitle>
-          <SheetDescription>
-            Choose what event will trigger this Instagram workflow.
-          </SheetDescription>
+          <SheetTitle>Edit Trigger</SheetTitle>
         </SheetHeader>
-        
-        <div className="space-y-6 py-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-2 rounded-lg">
-              <Instagram className="text-white size-5" />
-            </div>
-            <div className="font-medium text-lg">Instagram Trigger</div>
+
+        <form onSubmit={handleSubmit} className="space-y-6 py-6">
+          <div className="space-y-2">
+            <Label htmlFor="triggerType">Select Trigger Event</Label>
+            <Popover open={searchQuery.length > 0 || comboboxOpen} onOpenChange={setComboboxOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboboxOpen}
+                  className="w-full justify-between"
+                >
+                  {triggerType && selectedTrigger ? (
+                    <div className="flex items-center">
+                      {selectedTrigger.icon && <selectedTrigger.icon className="mr-2 h-4 w-4" />}
+                      {selectedTrigger.label}
+                    </div>
+                  ) : (
+                    "Choose an event"
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <div className="flex items-center border-b px-3 py-2">
+                  <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  <Input
+                    placeholder="Search events"
+                    className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Command>
+                  <CommandList>
+                    <CommandEmpty>No trigger event found.</CommandEmpty>
+                    {filteredEvents.map((event) => (
+                      <CommandItem
+                        key={event.value}
+                        value={event.value}
+                        onSelect={(value) => {
+                          setTriggerType(value);
+                          // Auto-fill label and description based on the selected trigger
+                          const selectedEvent = triggerEvents.find(e => e.value === value);
+                          if (selectedEvent) {
+                            setLabel(selectedEvent.label);
+                            setDescription(selectedEvent.description);
+                          }
+                          setSearchQuery("");
+                          setComboboxOpen(false);
+                        }}
+                        className="flex flex-col items-start py-2 px-3 cursor-pointer"
+                      >
+                        <div className="flex w-full items-center justify-between">
+                          <div className="flex items-center font-medium">
+                            {event.icon && <event.icon className="mr-2 h-4 w-4 text-muted-foreground" />}
+                            {event.label}
+                          </div>
+                          <div className={`text-xs px-2 py-0.5 rounded-full ${event.type === "Instant"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-amber-100 text-amber-800"
+                            }`}>
+                            {event.type}
+                          </div>
+                        </div>
+                        <div className="text-[9px] text-muted-foreground mt-0.5">
+                          {event.description}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
-          
-          <div className="space-y-4">
-            <Label>Select Trigger Event</Label>
-            <RadioGroup value={triggerType} onValueChange={setTriggerType} className="space-y-3">
-              <div className="flex items-center space-x-2 border rounded-md p-3 hover:bg-muted/50 cursor-pointer">
-                <RadioGroupItem value="follow" id="follow" />
-                <Label htmlFor="follow" className="flex items-center gap-2 cursor-pointer">
-                  <UserPlus className="h-4 w-4" />
-                  <div>
-                    <div className="font-medium">New Follower</div>
-                    <div className="text-sm text-muted-foreground">When someone follows your account</div>
-                  </div>
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2 border rounded-md p-3 hover:bg-muted/50 cursor-pointer">
-                <RadioGroupItem value="comment" id="comment" />
-                <Label htmlFor="comment" className="flex items-center gap-2 cursor-pointer">
-                  <MessageSquare className="h-4 w-4" />
-                  <div>
-                    <div className="font-medium">New Comment</div>
-                    <div className="text-sm text-muted-foreground">When someone comments on your post</div>
-                  </div>
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2 border rounded-md p-3 hover:bg-muted/50 cursor-pointer">
-                <RadioGroupItem value="like" id="like" />
-                <Label htmlFor="like" className="flex items-center gap-2 cursor-pointer">
-                  <Heart className="h-4 w-4" />
-                  <div>
-                    <div className="font-medium">New Like</div>
-                    <div className="text-sm text-muted-foreground">When someone likes your post</div>
-                  </div>
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2 border rounded-md p-3 hover:bg-muted/50 cursor-pointer">
-                <RadioGroupItem value="direct-message" id="direct-message" />
-                <Label htmlFor="direct-message" className="flex items-center gap-2 cursor-pointer">
-                  <MessageCircle className="h-4 w-4" />
-                  <div>
-                    <div className="font-medium">New Direct Message</div>
-                    <div className="text-sm text-muted-foreground">When someone sends you a DM</div>
-                  </div>
-                </Label>
-              </div>
-            </RadioGroup>
+
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading || !triggerType}>
+              {isLoading ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
-          
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave}>Save Changes</Button>
-          </div>
-        </div>
+        </form>
       </SheetContent>
     </Sheet>
   );
