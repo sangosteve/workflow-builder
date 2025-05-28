@@ -126,6 +126,7 @@ const WorkflowsPage = () => {
                 body: JSON.stringify({
                     name: newWorkflowName,
                     description: newWorkflowDescription,
+                    createDefaultTrigger: true, // Add this flag to indicate we want a default trigger node
                 }),
             })
 

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, description } = body
+    const { name, description, createDefaultTrigger } = body
     
     if (!name) {
       return NextResponse.json(
@@ -21,6 +21,35 @@ export async function POST(request: Request) {
         lastEdited: new Date(),
       },
     })
+    
+    // If createDefaultTrigger flag is true, create a default trigger node
+    if (createDefaultTrigger) {
+      // Create the node with its config in a single operation
+      await prisma.node.create({
+        data: {
+          workflowId: workflow.id,
+          type: 'TRIGGER',
+          label: 'Trigger',
+          positionX: 100,
+          positionY: 50,
+          config: {
+            create: {
+              // Use the config field which is of type Json
+              config: {
+                triggerType: '',
+                description: 'Configure this trigger to start your workflow',
+              }
+            }
+          }
+        }
+      });
+      
+      // Update the triggersCount in the workflow
+      await prisma.workflow.update({
+        where: { id: workflow.id },
+        data: { triggersCount: 1 }
+      });
+    }
     
     return NextResponse.json(workflow, { status: 201 })
   } catch (error) {

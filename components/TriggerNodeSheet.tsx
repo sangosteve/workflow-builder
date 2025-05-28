@@ -140,13 +140,25 @@ export default function TriggerNodeSheet({
     e.preventDefault();
     setIsLoading(true);
 
+    // Get the selected trigger event details
+    const selectedEvent = triggerEvents.find(event => event.value === triggerType);
+
+    if (!selectedEvent) {
+      toast.error("Please select a valid trigger event");
+      setIsLoading(false);
+      return;
+    }
+
     const updatedData = {
-      label: selectedTrigger?.label || "Trigger",
+      label: selectedEvent.label,
       triggerType,
-      description: selectedTrigger?.description || "",
+      description: selectedEvent.description,
+      category: selectedEvent.category,
+      type: selectedEvent.type
     };
 
     try {
+      console.log("data id:", data.id);
       // If we have a node ID in the database, update it via API
       if (data.id) {
         const response = await fetch(`/api/nodes/${data.id}`, {
@@ -159,7 +171,9 @@ export default function TriggerNodeSheet({
             type: "TRIGGER",
             config: {
               triggerType,
-              description: updatedData.description
+              description: updatedData.description,
+              category: updatedData.category,
+              triggerEventType: updatedData.type // "Instant" or "Polling"
             }
           }),
         });
@@ -174,7 +188,6 @@ export default function TriggerNodeSheet({
       onUpdate(updatedData);
 
       toast.success("Trigger node updated successfully");
-
       onClose();
     } catch (error) {
       console.error("Error updating node:", error);
