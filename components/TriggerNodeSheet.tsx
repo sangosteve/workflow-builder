@@ -28,6 +28,8 @@ import {
   CommandItem,
   CommandList,
 } from "./ui/command";
+import { useUpdateNode } from "../lib/api-hooks";
+
 
 interface TriggerNodeSheetProps {
   isOpen: boolean;
@@ -37,6 +39,7 @@ interface TriggerNodeSheetProps {
     label?: string;
     triggerType?: string;
     description?: string;
+    workflowId?: string;
   };
   onUpdate: (data: any) => void;
 }
@@ -129,23 +132,25 @@ export default function TriggerNodeSheet({
   const [label, setLabel] = useState(data.label || "");
   const [triggerType, setTriggerType] = useState(data.triggerType || "");
   const [description, setDescription] = useState(data.description || "");
-  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
+
+  console.log("TriggerNodeSheet data:", data);
   // Get the selected trigger event details
   const selectedTrigger = triggerEvents.find(event => event.value === triggerType);
 
+  // Use the updateNode mutation
+  const updateNodeMutation = useUpdateNode();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     // Get the selected trigger event details
     const selectedEvent = triggerEvents.find(event => event.value === triggerType);
 
     if (!selectedEvent) {
       toast.error("Please select a valid trigger event");
-      setIsLoading(false);
       return;
     }
 
@@ -158,30 +163,20 @@ export default function TriggerNodeSheet({
     };
 
     try {
-      console.log("data id:", data.id);
       // If we have a node ID in the database, update it via API
       if (data.id) {
-        const response = await fetch(`/api/nodes/${data.id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+        await updateNodeMutation.mutateAsync({
+          id: data.id,
+          data: {
             label: updatedData.label,
-            type: "TRIGGER",
             config: {
               triggerType,
               description: updatedData.description,
               category: updatedData.category,
               triggerEventType: updatedData.type // "Instant" or "Polling"
             }
-          }),
+          }
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to update node");
-        }
       }
 
       // Update the node in the React Flow instance
@@ -192,8 +187,6 @@ export default function TriggerNodeSheet({
     } catch (error) {
       console.error("Error updating node:", error);
       toast.error(`Failed to update trigger node: ${(error as Error).message}`);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -294,8 +287,11 @@ export default function TriggerNodeSheet({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || !triggerType}>
-              {isLoading ? "Saving..." : "Save Changes"}
+            <Button
+              type="submit"
+              disabled={!triggerType || updateNodeMutation.isPending}
+            >
+              {updateNodeMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>

@@ -6,9 +6,11 @@ import TriggerNodeSheet from "../TriggerNodeSheet";
 
 interface TriggerNodeProps {
   data: {
-    label: string;
+    id?: string;
+    label?: string;
     triggerType?: string;
     description?: string;
+    workflowId?: string;
   };
   isConnectable?: boolean;
   selected?: boolean;
@@ -69,7 +71,8 @@ export default function TriggerNode({
         data: {
           label,
           status,
-          actionType
+          actionType,
+          workflowId: data.workflowId // Pass the workflowId to the new node
         },
       },
     ]);
@@ -84,7 +87,7 @@ export default function TriggerNode({
         type: 'buttonedge', // Use our custom edge type
       },
     ]);
-  }, [id, getNode, setNodes, setEdges]);
+  }, [id, getNode, setNodes, setEdges, data.workflowId]);
 
   const handleNodeClick = (event: React.MouseEvent) => {
     // Prevent the click from propagating to the flow
@@ -102,7 +105,9 @@ export default function TriggerNode({
             ...node,
             data: {
               ...node.data,
-              ...updatedData
+              ...updatedData,
+              id: data.id, // Preserve the database ID
+              workflowId: data.workflowId // Preserve the workflowId
             }
           };
         }
@@ -186,7 +191,13 @@ export default function TriggerNode({
         <TriggerNodeSheet
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
-          data={data}
+          data={{
+            id: id || "", // Pass the database ID explicitly
+            label: data.label,
+            triggerType: data.triggerType,
+            description: data.description,
+            workflowId: data.workflowId
+          }}
           onUpdate={handleUpdateNodeData}
         />
       )}
