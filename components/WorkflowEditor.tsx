@@ -22,6 +22,7 @@ import ActionNode from "@/components/nodes/ActionNode";
 import ConditionalNode from "@/components/nodes/ConditionalNode";
 import ButtonEdge from "@/components/edges/ButtonEdge";
 import { transformDbNodesToReactFlow, transformDbEdgesToReactFlow } from "@/lib/transformNodes";
+import { useWorkflowNodes, useWorkflowEdges } from "@/lib/api-hooks";
 
 interface WorkflowEditorProps {
   workflowId?: string;
@@ -53,52 +54,39 @@ export default function WorkflowEditor({
   readOnly = false,
   className = "h-[calc(100vh-64px)]", // Default height assuming a 64px navbar
 }: WorkflowEditorProps) {
+  // Use React Query hooks if workflowId is provided
+  const { 
+    data: dbNodes, 
+    isLoading: isLoadingNodes, 
+    error: nodesError 
+  } = useWorkflowNodes(workflowId || '');
+  
+  const { 
+    data: dbEdges, 
+    isLoading: isLoadingEdges, 
+    error: edgesError 
+  } = useWorkflowEdges(workflowId || '');
+
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [isLoading, setIsLoading] = useState(!!workflowId);
 
+  // Effect to transform DB nodes to ReactFlow nodes when data is loaded
   useEffect(() => {
-    if (!workflowId) return;
+    if (dbNodes) {
+      const reactFlowNodes = transformDbNodesToReactFlow(dbNodes);
+      setNodes(reactFlowNodes);
+      setIsLoading(false);
+    }
+  }, [dbNodes]);
 
-    const fetchWorkflowData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch nodes
-        const nodesResponse = await fetch(`/api/workflows/${workflowId}/nodes`);
-        if (!nodesResponse.ok) {
-          throw new Error('Failed to fetch nodes');
-        }
-        const dbNodes = await nodesResponse.json();
-
-        console.log('Fetched nodes:', dbNodes);
-
-        // Transform database nodes to ReactFlow format
-        const reactFlowNodes = transformDbNodesToReactFlow(dbNodes);
-
-        // If no nodes were found, we might want to create a default one
-        // But for now, just use what we got from the database
-        setNodes(reactFlowNodes.length > 0 ? reactFlowNodes : []);
-
-        // Fetch edges
-        const edgesResponse = await fetch(`/api/workflows/${workflowId}/edges`);
-        if (!edgesResponse.ok) {
-          throw new Error('Failed to fetch edges');
-        }
-        const dbEdges = await edgesResponse.json();
-
-        // Transform database edges to ReactFlow format
-        const reactFlowEdges = transformDbEdgesToReactFlow(dbEdges);
-        setEdges(reactFlowEdges);
-
-      } catch (error) {
-        console.error('Error fetching workflow data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchWorkflowData();
-  }, [workflowId]);
+  // Effect to transform DB edges to ReactFlow edges when data is loaded
+  useEffect(() => {
+    if (dbEdges) {
+      const reactFlowEdges = transformDbEdgesToReactFlow(dbEdges);
+      setEdges(reactFlowEdges);
+    }
+  }, [dbEdges]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -126,7 +114,7 @@ export default function WorkflowEditor({
     (connection: Connection) => {
       const updatedEdges = addEdge({
         ...connection,
-        type: 'buttonedge'
+        type: 'buttonedge'  // Use our custom edge type for all connections
       }, edges);
       setEdges(updatedEdges);
       if (externalEdgesChange) {
@@ -136,31 +124,43 @@ export default function WorkflowEditor({
     [edges, externalEdgesChange]
   );
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="text-lg">Loading workflow...</div>
+      </div>
+    );
+  }
+
+  // Show error state if there was an error loading nodes
+  if (nodesError) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="text-lg text-red-500">Error loading workflow nodes</div>
+      </div>
+    );
+  }
+
   return (
     <ReactFlowProvider>
       <div className={`w-full ${className}`}>
-        {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-lg">Loading workflow...</div>
-          </div>
-        ) : (
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            fitView
-            nodesDraggable={!readOnly}
-            nodesConnectable={!readOnly}
-            elementsSelectable={!readOnly}
-          >
-            <Controls position="top-left" />
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-          </ReactFlow>
-        )}
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          fitView
+          nodesDraggable={!readOnly}
+          nodesConnectable={!readOnly}
+          elementsSelectable={!readOnly}
+        >
+          <Controls position="top-left" />
+          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+        </ReactFlow>
       </div>
     </ReactFlowProvider>
   );
