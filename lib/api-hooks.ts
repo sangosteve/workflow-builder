@@ -53,7 +53,7 @@ async function fetchWorkflow(id: string): Promise<Workflow> {
 
 async function fetchWorkflowNodes(workflowId: string): Promise<Node[]> {
 	if (!workflowId) return [];
-	
+
 	const response = await fetch(`/api/nodes?workflowId=${workflowId}`);
 	if (!response.ok) {
 		throw new Error("Failed to fetch nodes");
@@ -63,7 +63,7 @@ async function fetchWorkflowNodes(workflowId: string): Promise<Node[]> {
 
 async function fetchWorkflowEdges(workflowId: string): Promise<Edge[]> {
 	if (!workflowId) return [];
-	
+
 	const response = await fetch(`/api/edges?workflowId=${workflowId}`);
 	if (!response.ok) {
 		throw new Error("Failed to fetch edges");
@@ -121,6 +121,46 @@ async function createEdge(edgeData: any): Promise<Edge> {
 	return response.json();
 }
 
+/**
+ * Updates the position of a node in the database
+ */
+async function updateNodePosition({
+	nodeId,
+	workflowId,
+	positionX,
+	positionY,
+}: {
+	nodeId: string;
+	workflowId: string;
+	positionX: number;
+	positionY: number;
+}) {
+	try {
+		const response = await fetch(
+			`/api/workflows/${workflowId}/nodes/${nodeId}/position`,
+			{
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					positionX,
+					positionY,
+				}),
+			}
+		);
+
+		if (!response.ok) {
+			throw new Error(`Failed to update node position: ${response.statusText}`);
+		}
+
+		return await response.json();
+	} catch (error) {
+		console.error("Error updating node position:", error);
+		throw error;
+	}
+}
+
 // React Query Hooks
 export function useWorkflows() {
 	return useQuery({
@@ -175,7 +215,8 @@ export function useUpdateNode() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({ id, data }: { id: string; data: any }) => updateNode(id, data),
+		mutationFn: ({ id, data }: { id: string; data: any }) =>
+			updateNode(id, data),
 		onSuccess: (data) => {
 			// Invalidate and refetch nodes for this workflow
 			queryClient.invalidateQueries({
@@ -199,4 +240,4 @@ export function useCreateEdge() {
 	});
 }
 
-export { createNode, createEdge };
+export { createNode, createEdge, updateNodePosition };
