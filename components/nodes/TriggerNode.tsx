@@ -38,6 +38,10 @@ export default function TriggerNode({
     // Create a unique ID for the new node
     const newNodeId = `action-${Date.now()}`;
 
+    // Position for the new node - keep X at 100, add 200 to Y from parent
+    const newNodeX = 100; // Consistent X position
+    const newNodeY = parentNode.position.y + 200; // Position 200 units below the current node
+
     // Get label and status based on action type
     let label = '';
     let status = 'Action required';
@@ -66,8 +70,8 @@ export default function TriggerNode({
         id: newNodeId,
         type: 'action',
         position: {
-          x: parentNode.position.x,
-          y: parentNode.position.y + 120, // Position below the current node
+          x: newNodeX,
+          y: newNodeY,
         },
         data: {
           label,
@@ -94,14 +98,15 @@ export default function TriggerNode({
       try {
         console.log("Creating node with workflowId:", data.workflowId);
         console.log("Source node ID:", id);
+        console.log(`Creating node at position (${newNodeX}, ${newNodeY})`);
 
         // Create the node in the database
         const createdNode = await createNode({
           workflowId: data.workflowId,
           type: 'ACTION',
           label,
-          positionX: parentNode.position.x,
-          positionY: parentNode.position.y + 120,
+          positionX: newNodeX,
+          positionY: newNodeY,
           config: {
             actionType,
             status
@@ -203,6 +208,7 @@ export default function TriggerNode({
             <div className="flex flex-col">
               <div className="font-medium">{data.label || 'Instagram Trigger'}</div>
               <div className="text-sm text-gray-600">{data.description || 'When a user interacts with your content'}</div>
+
             </div>
           </div>
           <button
@@ -246,7 +252,10 @@ export default function TriggerNode({
         <TriggerNodeSheet
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
-          data={data}
+          data={{
+            ...data,
+            id: id || "" // Pass the node ID explicitly
+          }}
           onUpdate={handleUpdateNodeData}
         />
       )}

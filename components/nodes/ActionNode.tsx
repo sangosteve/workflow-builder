@@ -38,6 +38,10 @@ export default function ActionNode({
     // Create a unique ID for the new node
     const newNodeId = `action-${Date.now()}`;
 
+    // Position for the new node - keep X at 100, add 200 to Y from parent
+    const newNodeX = 100; // Consistent X position
+    const newNodeY = parentNode.position.y + 200; // Position 200 units below the current node
+
     // Get label and status based on action type
     let label = '';
     let status = 'Action required';
@@ -66,8 +70,8 @@ export default function ActionNode({
         id: newNodeId,
         type: 'action',
         position: {
-          x: parentNode.position.x,
-          y: parentNode.position.y + 120, // Position below the current node
+          x: newNodeX,
+          y: newNodeY,
         },
         data: {
           label,
@@ -97,8 +101,8 @@ export default function ActionNode({
           workflowId: data.workflowId,
           type: 'ACTION',
           label,
-          positionX: parentNode.position.x,
-          positionY: parentNode.position.y + 120,
+          positionX: newNodeX,
+          positionY: newNodeY,
           config: {
             actionType,
             status

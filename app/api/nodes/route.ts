@@ -21,6 +21,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If positionX and positionY are not provided or are zero, calculate them
+    if (!data.positionX || !data.positionY) {
+      // Find the last node in this workflow to position the new one below it
+      const lastNode = await prisma.node.findFirst({
+        where: { workflowId: data.workflowId },
+        orderBy: { positionY: 'desc' }
+      });
+
+      // Default X position is 100
+      data.positionX = 100;
+      
+      // If there's a previous node, position this one 200 units below it
+      // Otherwise, start at Y=100
+      data.positionY = lastNode ? lastNode.positionY + 200 : 100;
+      
+      console.log(`Calculated position for new node: (${data.positionX}, ${data.positionY})`);
+    }
+
     // Extract config data if provided
     const { config, ...nodeData } = data;
 
@@ -30,8 +48,8 @@ export async function POST(request: NextRequest) {
         workflowId: data.workflowId,
         type: data.type,
         label: data.label || "",
-        positionX: data.positionX || 0,
-        positionY: data.positionY || 0,
+        positionX: data.positionX,
+        positionY: data.positionY,
         // Create the node config if provided
         ...(config && {
           config: {

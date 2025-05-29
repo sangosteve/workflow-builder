@@ -28,8 +28,7 @@ import {
   CommandItem,
   CommandList,
 } from "./ui/command";
-import { useUpdateNode } from "../lib/api-hooks";
-
+import { useUpdateNode } from "@/lib/api-hooks";
 
 interface TriggerNodeSheetProps {
   isOpen: boolean;
@@ -40,87 +39,77 @@ interface TriggerNodeSheetProps {
     triggerType?: string;
     description?: string;
     workflowId?: string;
+    [key: string]: any;
   };
   onUpdate: (data: any) => void;
 }
 
 // Define trigger event options with categories and icons
 const triggerEvents = [
-  // Instagram triggers
   {
     value: "follow",
     label: "New Follower",
-    description: "Triggers when someone follows your account.",
-    category: "Instagram",
+    description: "When someone follows your account",
+    category: "Account",
     type: "Instant",
     icon: UserPlus
   },
   {
     value: "comment",
     label: "New Comment",
-    description: "Triggers when someone comments on your post.",
-    category: "Instagram",
-    type: "Polling",
+    description: "When someone comments on your post",
+    category: "Engagement",
+    type: "Instant",
     icon: MessageSquare
   },
   {
     value: "like",
     label: "New Like",
-    description: "Triggers when someone likes your post.",
-    category: "Instagram",
-    type: "Polling",
+    description: "When someone likes your post",
+    category: "Engagement",
+    type: "Instant",
     icon: Heart
   },
   {
     value: "direct-message",
     label: "New Direct Message",
-    description: "Triggers when you receive a direct message.",
-    category: "Instagram",
-    type: "Polling",
+    description: "When someone sends you a direct message",
+    category: "Messages",
+    type: "Instant",
     icon: MessageCircle
   },
-
-  // Trello-like triggers
   {
-    value: "new-label",
-    label: "New Label",
-    description: "Triggers when a new label is created.",
-    category: "Trello",
+    value: "hashtag-mention",
+    label: "Hashtag Mention",
+    description: "When your specified hashtag is used in a post",
+    category: "Mentions",
     type: "Polling",
     icon: Tag
   },
   {
-    value: "label-added-to-card",
-    label: "New Label Added to Card",
-    description: "Triggers when a label is added in a card.",
-    category: "Trello",
-    type: "Instant",
-    icon: Tag
-  },
-  {
-    value: "new-list",
-    label: "New List",
-    description: "Triggers when a new list on a board is added.",
-    category: "Trello",
+    value: "post-by-account",
+    label: "New Post by Account",
+    description: "When a specific account posts new content",
+    category: "Monitoring",
     type: "Polling",
     icon: List
   },
   {
-    value: "new-member",
-    label: "New Member on Board",
-    description: "Triggers when a new member joins a board.",
-    category: "Trello",
+    value: "follower-milestone",
+    label: "Follower Milestone",
+    description: "When you reach a follower milestone",
+    category: "Account",
     type: "Polling",
     icon: Users
   },
   {
-    value: "new-notification",
-    label: "New Notification",
-    description: "Triggers when you get a new notification.",
-    category: "Trello",
+    value: "engagement-spike",
+    label: "Engagement Spike",
+    description: "When there's a sudden increase in engagement",
+    category: "Analytics",
     type: "Polling",
     icon: Bell
-  },
+  }
 ];
 
 export default function TriggerNodeSheet({
@@ -134,14 +123,13 @@ export default function TriggerNodeSheet({
   const [description, setDescription] = useState(data.description || "");
   const [searchQuery, setSearchQuery] = useState("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
+  
+  // Use the useUpdateNode hook
+  const updateNodeMutation = useUpdateNode();
+  const isLoading = updateNodeMutation.isPending;
 
-
-  console.log("TriggerNodeSheet data:", data);
   // Get the selected trigger event details
   const selectedTrigger = triggerEvents.find(event => event.value === triggerType);
-
-  // Use the updateNode mutation
-  const updateNodeMutation = useUpdateNode();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,12 +151,15 @@ export default function TriggerNodeSheet({
     };
 
     try {
-      // If we have a node ID in the database, update it via API
+      console.log("Node ID for update:", data.id);
+      
+      // If we have a node ID, update it via API
       if (data.id) {
         await updateNodeMutation.mutateAsync({
           id: data.id,
           data: {
             label: updatedData.label,
+            type: "TRIGGER",
             config: {
               triggerType,
               description: updatedData.description,
@@ -177,12 +168,14 @@ export default function TriggerNodeSheet({
             }
           }
         });
+        
+        toast.success("Trigger node updated successfully");
+      } else {
+        console.warn("No node ID provided, skipping database update");
       }
 
       // Update the node in the React Flow instance
       onUpdate(updatedData);
-
-      toast.success("Trigger node updated successfully");
       onClose();
     } catch (error) {
       console.error("Error updating node:", error);
@@ -287,11 +280,8 @@ export default function TriggerNodeSheet({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={!triggerType || updateNodeMutation.isPending}
-            >
-              {updateNodeMutation.isPending ? "Saving..." : "Save Changes"}
+            <Button type="submit" disabled={isLoading || !triggerType}>
+              {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>
