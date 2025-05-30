@@ -11,7 +11,7 @@ interface ActionNodeProps {
     status?: string;
     actionType?: string;
     message?: string;
-    workflowId?: string; // Ensure workflowId is included in the data prop
+    workflowId?: string;
   };
   isConnectable?: boolean;
   selected?: boolean;
@@ -256,7 +256,11 @@ export default function ActionNode({
         <ActionNodeSheet 
           isOpen={isSheetOpen} 
           onClose={() => setIsSheetOpen(false)} 
-          data={data} 
+          data={{
+            ...data,
+            id: id || "",
+            actionType: data.actionType || "direct-message"
+          }} 
           onUpdate={handleUpdateNodeData} 
         />
       )}

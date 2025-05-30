@@ -4,15 +4,19 @@ import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { MessageCircle, Reply, UserPlus } from "lucide-react";
 import { Textarea } from "./ui/textarea";
+import { useUpdateNode } from "@/lib/api-hooks";
+import { toast } from "sonner";
 
 interface ActionNodeSheetProps {
   isOpen: boolean;
   onClose: () => void;
   data: {
+    id?: string;
     label: string;
-    status?: string;
-    actionType?: string;
     message?: string;
+    status?: string;
+    actionType: string; // Required
+    workflowId?: string;
   };
   onUpdate: (updatedData: any) => void;
 }
@@ -25,12 +29,63 @@ export default function ActionNodeSheet({
 }: ActionNodeSheetProps) {
   const [message, setMessage] = useState(data.message || "");
   
-  const handleSave = () => {
-    onUpdate({ 
+  // Use the useUpdateNode hook
+  const updateNodeMutation = useUpdateNode();
+  const isLoading = updateNodeMutation.isPending;
+  
+  const handleSave = async () => {
+    // Create the updated data object
+    const updatedData = { 
       ...data,
       message,
       status: message ? message.substring(0, 30) + (message.length > 30 ? "..." : "") : "Message to be sent"
-    });
+    };
+    
+    // Apply optimistic update immediately
+    onUpdate(updatedData);
+    
+    // If we have a valid node ID (not a temporary ID), update it via API
+    if (data.id && !data.id.startsWith('action-')) {
+      try {
+        // Prepare the data for the API
+        const apiData = {
+          label: data.label,
+          type: "ACTION",
+          config: {
+            actionType: data.actionType,
+            message: message,
+            status: updatedData.status
+          }
+        };
+        
+        // Use the mutation with onError to handle rollback if needed
+        updateNodeMutation.mutate(
+          { id: data.id, data: apiData },
+          {
+            onSuccess: () => {
+              toast.success("Action node updated successfully");
+            },
+            onError: (error) => {
+              console.error("Error updating node:", error);
+              toast.error(`Failed to update action node: ${(error as Error).message}`);
+              
+              // Rollback the optimistic update by re-updating with original data
+              onUpdate(data);
+            }
+          }
+        );
+      } catch (error) {
+        console.error("Error updating node:", error);
+        toast.error(`Failed to update action node: ${(error as Error).message}`);
+        
+        // Rollback the optimistic update
+        onUpdate(data);
+      }
+    } else {
+      console.warn("No valid node ID provided, skipping database update");
+    }
+    
+    // Close the sheet immediately after optimistic update
     onClose();
   };
 
@@ -61,8 +116,10 @@ export default function ActionNodeSheet({
             </div>
             
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleSave}>Save Changes</Button>
+              <Button variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
+              <Button onClick={handleSave} disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
           </div>
         );
@@ -92,8 +149,10 @@ export default function ActionNodeSheet({
             </div>
             
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleSave}>Save Changes</Button>
+              <Button variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
+              <Button onClick={handleSave} disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
           </div>
         );
@@ -113,7 +172,7 @@ export default function ActionNodeSheet({
             </p>
             
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
               <Button onClick={onClose}>Close</Button>
             </div>
           </div>
@@ -123,6 +182,11 @@ export default function ActionNodeSheet({
         return (
           <div className="py-4">
             <p>Configure your Instagram action</p>
+            
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
+              <Button onClick={onClose}>Close</Button>
+            </div>
           </div>
         );
     }
