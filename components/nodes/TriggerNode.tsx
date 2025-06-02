@@ -5,17 +5,22 @@ import { Handle, Position, useReactFlow, useNodeId } from "@xyflow/react";
 import { Instagram, MoreVertical, UserPlus, MessageSquare, Heart, MessageCircle } from "lucide-react";
 import { createNode, createEdge } from "@/lib/api-hooks";
 
-type TriggerNodeProps = {
-  data: {
-    label?: string;
-    description?: string;
-    triggerType?: string;
-    workflowId?: string;
-    [key: string]: any;
-  };
+// Define a proper type for the trigger node data
+interface TriggerNodeData {
+  id?: string;
+  label?: string;
+  description?: string;
+  triggerType?: string;
+  category?: string;
+  type?: string;
+  workflowId?: string;
+}
+
+interface TriggerNodeProps {
+  data: TriggerNodeData;
   isConnectable?: boolean;
   selected?: boolean;
-};
+}
 
 export default function TriggerNode({
   data,
@@ -157,7 +162,7 @@ export default function TriggerNode({
     setIsSheetOpen(true);
   };
 
-  const handleUpdateNodeData = (updatedData: any) => {
+  const handleUpdateNodeData = (updatedData: TriggerNodeData) => {
     if (!id) return;
 
     setNodes((nodes) =>
