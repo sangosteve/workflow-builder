@@ -19,9 +19,7 @@ interface Node {
 	label: string;
 	positionX: number;
 	positionY: number;
-	config?: {
-		config: any;
-	};
+	config?: Record<string, unknown>;
 }
 
 interface Edge {
@@ -32,6 +30,32 @@ interface Edge {
 	label?: string;
 	condition?: string;
 	createdAt: string;
+}
+
+// Define types for the request payloads
+interface CreateNodePayload {
+	workflowId: string;
+	type: string;
+	label: string;
+	positionX: number;
+	positionY: number;
+	config?: Record<string, unknown>;
+}
+
+interface UpdateNodePayload {
+	label?: string;
+	type?: string;
+	positionX?: number;
+	positionY?: number;
+	config?: Record<string, unknown>;
+}
+
+interface CreateEdgePayload {
+	workflowId: string;
+	sourceNodeId: string;
+	targetNodeId: string;
+	label?: string;
+	condition?: string;
 }
 
 // API functions
@@ -71,7 +95,7 @@ async function fetchWorkflowEdges(workflowId: string): Promise<Edge[]> {
 	return response.json();
 }
 
-async function createNode(nodeData: any): Promise<Node> {
+async function createNode(nodeData: CreateNodePayload): Promise<Node> {
 	const response = await fetch("/api/nodes", {
 		method: "POST",
 		headers: {
@@ -88,7 +112,7 @@ async function createNode(nodeData: any): Promise<Node> {
 	return response.json();
 }
 
-async function updateNode(nodeId: string, nodeData: any): Promise<Node> {
+async function updateNode(nodeId: string, nodeData: UpdateNodePayload): Promise<Node> {
 	const response = await fetch(`/api/nodes/${nodeId}`, {
 		method: "PATCH",
 		headers: {
@@ -104,7 +128,7 @@ async function updateNode(nodeId: string, nodeData: any): Promise<Node> {
 	return response.json();
 }
 
-async function createEdge(edgeData: any): Promise<Edge> {
+async function createEdge(edgeData: CreateEdgePayload): Promise<Edge> {
 	const response = await fetch("/api/edges", {
 		method: "POST",
 		headers: {
@@ -171,11 +195,16 @@ export function useCreateNode() {
 	});
 }
 
+interface UpdateNodeMutationParams {
+	id: string;
+	data: UpdateNodePayload;
+}
+
 export function useUpdateNode() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({ id, data }: { id: string; data: any }) => updateNode(id, data),
+		mutationFn: ({ id, data }: UpdateNodeMutationParams) => updateNode(id, data),
 		onSuccess: (data) => {
 			// Invalidate and refetch nodes for this workflow
 			queryClient.invalidateQueries({
