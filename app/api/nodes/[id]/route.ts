@@ -1,12 +1,18 @@
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
-    const nodeId = params.id;
+    const nodeId = context.params.id;
     const data = await request.json();
     console.log(`Updating node ${nodeId} with data:`, data);
 
@@ -63,10 +69,10 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
-    const nodeId = params.id;
+    const nodeId = context.params.id;
 
     if (!nodeId) {
       return NextResponse.json(
@@ -107,10 +113,10 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
-    const nodeId = params.id;
+    const nodeId = context.params.id;
 
     if (!nodeId) {
       return NextResponse.json(
