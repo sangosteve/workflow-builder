@@ -7,7 +7,7 @@ const WorkflowPage = () => {
     const params = useParams();
     const workflowId = params.id as string;
     const [isLoading, setIsLoading] = useState(true);
-    const [workflow, setWorkflow] = useState<any>(null);
+    const [_workflow, setWorkflow] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {

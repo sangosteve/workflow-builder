@@ -55,29 +55,29 @@ export default function WorkflowEditor({
   className = "h-[calc(100vh-64px)]", // Default height assuming a 64px navbar
 }: WorkflowEditorProps) {
   // Use React Query hooks if workflowId is provided
-  const { 
-    data: dbNodes, 
-    isLoading: isLoadingNodes, 
-    error: nodesError 
+  const {
+    data: dbNodes,
+    // isLoading: isLoadingNodes, 
+    //error: nodesError 
   } = useWorkflowNodes(workflowId || '');
-  
-  const { 
-    data: dbEdges, 
-    isLoading: isLoadingEdges, 
-    error: edgesError 
+
+  const {
+    data: dbEdges,
+    // isLoading: isLoadingEdges, 
+    //  error: edgesError 
   } = useWorkflowEdges(workflowId || '');
 
-  const createEdgeMutation = useCreateEdge();
+  // const createEdgeMutation = useCreateEdge();
 
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
-  const [isLoading, setIsLoading] = useState(!!workflowId);
+  const [_isLoading, setIsLoading] = useState(!!workflowId);
 
   // Effect to transform DB nodes to ReactFlow nodes when data is loaded
   useEffect(() => {
     if (dbNodes && workflowId) {
       const reactFlowNodes = transformDbNodesToReactFlow(dbNodes);
-      
+
       // Ensure all nodes have the workflowId in their data
       const nodesWithWorkflowId = reactFlowNodes.map(node => ({
         ...node,
@@ -86,7 +86,7 @@ export default function WorkflowEditor({
           workflowId
         }
       }));
-      
+
       setNodes(nodesWithWorkflowId);
       setIsLoading(false);
     }
@@ -130,10 +130,10 @@ export default function WorkflowEditor({
         id: `e-${connection.source}-${connection.target}-${Date.now()}`,
         type: 'buttonedge',  // Use our custom edge type for all connections
       };
-      
+
       const updatedEdges = addEdge(newEdge, edges);
       setEdges(updatedEdges);
-      
+
       // If we have a workflowId, also create the edge in the database
       if (workflowId) {
         try {
@@ -142,7 +142,7 @@ export default function WorkflowEditor({
             sourceNodeId: connection.source,
             targetNodeId: connection.target,
           });
-          
+
           await createEdge({
             workflowId,
             sourceNodeId: connection.source,

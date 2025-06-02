@@ -118,12 +118,12 @@ export default function TriggerNodeSheet({
   data,
   onUpdate
 }: TriggerNodeSheetProps) {
-  const [label, setLabel] = useState(data.label || "");
+  const [_label, setLabel] = useState(data.label || "");
   const [triggerType, setTriggerType] = useState(data.triggerType || "");
-  const [description, setDescription] = useState(data.description || "");
+  const [_description, setDescription] = useState(data.description || "");
   const [searchQuery, setSearchQuery] = useState("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
-  
+
   // Use the useUpdateNode hook
   const updateNodeMutation = useUpdateNode();
   const isLoading = updateNodeMutation.isPending;
@@ -152,7 +152,7 @@ export default function TriggerNodeSheet({
 
     try {
       console.log("Node ID for update:", data.id);
-      
+
       // If we have a node ID, update it via API
       if (data.id) {
         await updateNodeMutation.mutateAsync({
@@ -168,7 +168,7 @@ export default function TriggerNodeSheet({
             }
           }
         });
-        
+
         toast.success("Trigger node updated successfully");
       } else {
         console.warn("No node ID provided, skipping database update");

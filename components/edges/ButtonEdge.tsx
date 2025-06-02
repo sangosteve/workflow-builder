@@ -1,8 +1,6 @@
 import React, { useCallback } from "react";
 import { EdgeProps, getBezierPath, useReactFlow } from "@xyflow/react";
 import AddNodeButton from "../AddNodeButton";
-import { Button } from "../ui/button";
-import { Plus } from "lucide-react";
 import { createNode, createEdge } from "@/lib/api-hooks";
 
 export default function ButtonEdge({
@@ -17,7 +15,6 @@ export default function ButtonEdge({
   markerEnd,
   source,
   target,
-  data,
 }: EdgeProps) {
   const { setNodes, setEdges, getNode, getNodes } = useReactFlow();
 

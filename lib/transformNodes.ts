@@ -1,5 +1,4 @@
 import { Node as ReactFlowNode, Edge as ReactFlowEdge } from "@xyflow/react";
-import { Node as DbNode } from "@prisma/client";
 
 // This function transforms database nodes into ReactFlow nodes
 export function transformDbNodesToReactFlow(dbNodes: any[]): ReactFlowNode[] {

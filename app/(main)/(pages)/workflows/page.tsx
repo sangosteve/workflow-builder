@@ -115,7 +115,7 @@ const WorkflowsPage = () => {
     // Function to handle workflow creation
     const handleCreateWorkflow = async () => {
         if (!newWorkflowName) return
-        
+
         setIsCreating(true)
         try {
             const response = await fetch('/api/workflows', {
@@ -135,15 +135,15 @@ const WorkflowsPage = () => {
             }
 
             const newWorkflow = await response.json()
-            
+
             // Refresh workflows list
             await fetchWorkflows()
-            
+
             // Reset form and close dialog
             setNewWorkflowName("")
             setNewWorkflowDescription("")
             setIsDialogOpen(false)
-            
+
             // Navigate to the new workflow editor
             router.push(`/workflows/${newWorkflow.id}`)
         } catch (error) {
@@ -196,7 +196,7 @@ const WorkflowsPage = () => {
                                     onChange={(e) => setNewWorkflowDescription(e.target.value)}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    You'll be able to add triggers and actions after creating the workflow.
+                                    You will be able to add triggers and actions after creating the workflow.
                                 </p>
                             </div>
                         </div>
