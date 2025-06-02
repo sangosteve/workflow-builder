@@ -7,18 +7,21 @@ import { Textarea } from "./ui/textarea";
 import { useUpdateNode } from "@/lib/api-hooks";
 import { toast } from "sonner";
 
+// Define a type for the action node data
+interface ActionNodeData {
+  id?: string;
+  label: string;
+  message?: string;
+  status?: string;
+  actionType: string;
+  workflowId?: string;
+}
+
 interface ActionNodeSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  data: {
-    id?: string;
-    label: string;
-    message?: string;
-    status?: string;
-    actionType: string; // Required
-    workflowId?: string;
-  };
-  onUpdate: (updatedData: any) => void;
+  data: ActionNodeData;
+  onUpdate: (updatedData: ActionNodeData) => void;
 }
 
 export default function ActionNodeSheet({ 
@@ -35,7 +38,7 @@ export default function ActionNodeSheet({
   
   const handleSave = async () => {
     // Create the updated data object
-    const updatedData = { 
+    const updatedData: ActionNodeData = { 
       ...data,
       message,
       status: message ? message.substring(0, 30) + (message.length > 30 ? "..." : "") : "Message to be sent"
