@@ -22,7 +22,7 @@ import ActionNode from "@/components/nodes/ActionNode";
 import ConditionalNode from "@/components/nodes/ConditionalNode";
 import ButtonEdge from "@/components/edges/ButtonEdge";
 import { transformDbNodesToReactFlow, transformDbEdgesToReactFlow } from "@/lib/transformNodes";
-import { useWorkflowNodes, useWorkflowEdges, useCreateEdge, createEdge } from "@/lib/api-hooks";
+import { useWorkflowNodes, useWorkflowEdges, createEdge } from "@/lib/api-hooks";
 
 interface WorkflowEditorProps {
   workflowId?: string;
@@ -159,6 +159,10 @@ export default function WorkflowEditor({
     },
     [workflowId, edges, setEdges]
   );
+
+  if (_isLoading) {
+    return <div>Loading...</div>
+  }
 
   return (
     <ReactFlowProvider>
