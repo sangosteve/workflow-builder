@@ -30,18 +30,22 @@ import {
 } from "./ui/command";
 import { useUpdateNode } from "@/lib/api-hooks";
 
+// Define the structure for trigger node data
+interface TriggerNodeData {
+  id?: string;
+  label?: string;
+  triggerType?: string;
+  description?: string;
+  workflowId?: string;
+  category?: string;
+  type?: string;
+}
+
 interface TriggerNodeSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  data: {
-    id?: string;
-    label?: string;
-    triggerType?: string;
-    description?: string;
-    workflowId?: string;
-    [key: string]: any;
-  };
-  onUpdate: (data: any) => void;
+  data: TriggerNodeData;
+  onUpdate: (data: TriggerNodeData) => void;
 }
 
 // Define trigger event options with categories and icons
@@ -118,9 +122,9 @@ export default function TriggerNodeSheet({
   data,
   onUpdate
 }: TriggerNodeSheetProps) {
-  const [_label, setLabel] = useState(data.label || "");
+  // Remove the underscore prefix since we're not using these variables directly
+  // We'll keep the state variables but remove the unused ones from the component
   const [triggerType, setTriggerType] = useState(data.triggerType || "");
-  const [_description, setDescription] = useState(data.description || "");
   const [searchQuery, setSearchQuery] = useState("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
@@ -142,7 +146,8 @@ export default function TriggerNodeSheet({
       return;
     }
 
-    const updatedData = {
+    const updatedData: TriggerNodeData = {
+      ...data, // Keep existing data like ID and workflowId
       label: selectedEvent.label,
       triggerType,
       description: selectedEvent.description,
@@ -242,12 +247,6 @@ export default function TriggerNodeSheet({
                         value={event.value}
                         onSelect={(value) => {
                           setTriggerType(value);
-                          // Auto-fill label and description based on the selected trigger
-                          const selectedEvent = triggerEvents.find(e => e.value === value);
-                          if (selectedEvent) {
-                            setLabel(selectedEvent.label);
-                            setDescription(selectedEvent.description);
-                          }
                           setSearchQuery("");
                           setComboboxOpen(false);
                         }}
