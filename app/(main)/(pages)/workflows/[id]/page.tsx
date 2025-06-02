@@ -7,7 +7,6 @@ const WorkflowPage = () => {
     const params = useParams();
     const workflowId = params.id as string;
     const [isLoading, setIsLoading] = useState(true);
-    const [_workflow, setWorkflow] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -19,8 +18,9 @@ const WorkflowPage = () => {
                 if (!response.ok) {
                     throw new Error('Failed to fetch workflow');
                 }
-                const data = await response.json();
-                setWorkflow(data);
+                // We can still fetch the data to validate the workflow exists
+                await response.json();
+                // But we don't need to store it since it's not used
             } catch (err) {
                 console.error('Error fetching workflow:', err);
                 setError('Failed to load workflow. Please try again.');
