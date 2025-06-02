@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating workflow:', error)
     return NextResponse.json(
-      { error: 'Failed to create workflow' },
+      { error: 'Failed to create workflow', details: (error as Error).message },
       { status: 500 }
     )
   }
@@ -63,6 +63,9 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
+    // First check database connection
+    await prisma.$connect();
+    
     const workflows = await prisma.workflow.findMany({
       orderBy: {
         lastEdited: 'desc',
@@ -73,8 +76,10 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching workflows:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch workflows' },
+      { error: 'Failed to fetch workflows', details: (error as Error).message },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect();
   }
 }
