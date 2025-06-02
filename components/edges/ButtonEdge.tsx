@@ -64,8 +64,8 @@ export default function ButtonEdge({
     const verticalSpacing = 200; // Consistent vertical spacing
     const newNodeY = sourceNode.position.y + verticalSpacing;
 
-    // Extract workflowId from source or target node data
-    const workflowId = sourceNode.data.workflowId || targetNode.data.workflowId;
+    // Extract workflowId from source or target node data and ensure it's a string
+    const workflowId = String(sourceNode.data.workflowId || targetNode.data.workflowId || '');
 
     // Get all nodes that need to be shifted down
     const allNodes = getNodes();

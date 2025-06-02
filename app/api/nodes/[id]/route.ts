@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const nodeId = params.id;
     const data = await request.json();
     console.log(`Updating node ${nodeId} with data:`, data);
@@ -63,9 +64,10 @@ export async function PATCH(
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const nodeId = params.id;
 
     if (!nodeId) {
@@ -107,9 +109,10 @@ export async function GET(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const nodeId = params.id;
 
     if (!nodeId) {

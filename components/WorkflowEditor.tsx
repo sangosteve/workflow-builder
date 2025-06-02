@@ -125,10 +125,15 @@ export default function WorkflowEditor({
   const onConnect = useCallback(
     async (connection: Connection) => {
       // Add the edge to the React Flow instance first
-      const newEdge = {
+      const newEdge: Edge = {
         ...connection,
         id: `e-${connection.source}-${connection.target}-${Date.now()}`,
         type: 'buttonedge',  // Use our custom edge type for all connections
+        // Ensure these properties are defined as required by addEdge
+        source: connection.source || '',
+        target: connection.target || '',
+        sourceHandle: connection.sourceHandle || null,
+        targetHandle: connection.targetHandle || null,
       };
 
       const updatedEdges = addEdge(newEdge, edges);
@@ -145,8 +150,8 @@ export default function WorkflowEditor({
 
           await createEdge({
             workflowId,
-            sourceNodeId: connection.source,
-            targetNodeId: connection.target,
+            sourceNodeId: connection.source || '',
+            targetNodeId: connection.target || '',
             label: "",  // Default empty label
             condition: ""  // Default empty condition
           });

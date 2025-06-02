@@ -3,11 +3,12 @@ import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params
     const workflowId = params.id
-    
+
     if (!workflowId) {
       return NextResponse.json(
         { error: 'Workflow ID is required' },
@@ -15,11 +16,8 @@ export async function GET(
       )
     }
 
-    // Fetch the workflow
     const workflow = await prisma.workflow.findUnique({
-      where: {
-        id: workflowId,
-      },
+      where: { id: workflowId },
     })
 
     if (!workflow) {
@@ -41,12 +39,13 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params
     const workflowId = params.id
-    const body = await request.json()
-    
+    const data = await request.json()
+
     if (!workflowId) {
       return NextResponse.json(
         { error: 'Workflow ID is required' },
@@ -54,20 +53,12 @@ export async function PATCH(
       )
     }
 
-    // Update the workflow
-    const workflow = await prisma.workflow.update({
-      where: {
-        id: workflowId,
-      },
-      data: {
-        name: body.name,
-        description: body.description,
-        status: body.status,
-        lastEdited: new Date(),
-      },
+    const updatedWorkflow = await prisma.workflow.update({
+      where: { id: workflowId },
+      data,
     })
 
-    return NextResponse.json(workflow)
+    return NextResponse.json(updatedWorkflow)
   } catch (error) {
     console.error('Error updating workflow:', error)
     return NextResponse.json(
@@ -79,11 +70,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params
     const workflowId = params.id
-    
+
     if (!workflowId) {
       return NextResponse.json(
         { error: 'Workflow ID is required' },
@@ -91,14 +83,12 @@ export async function DELETE(
       )
     }
 
-    // Delete the workflow (this will cascade delete nodes and edges)
-    await prisma.workflow.delete({
-      where: {
-        id: workflowId,
-      },
+    // Delete the workflow and all related entities
+    const deletedWorkflow = await prisma.workflow.delete({
+      where: { id: workflowId },
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json(deletedWorkflow)
   } catch (error) {
     console.error('Error deleting workflow:', error)
     return NextResponse.json(
