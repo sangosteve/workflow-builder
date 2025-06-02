@@ -5,14 +5,18 @@ import AddNodeButton from "../AddNodeButton";
 import ActionNodeSheet from "../ActionNodeSheet";
 import { createNode, createEdge } from "@/lib/api-hooks";
 
+// Define the ActionNodeData type to replace 'any'
+interface ActionNodeData {
+  id?: string;
+  label: string;
+  status?: string;
+  actionType?: string;
+  message?: string;
+  workflowId?: string;
+}
+
 interface ActionNodeProps {
-  data: {
-    label: string;
-    status?: string;
-    actionType?: string;
-    message?: string;
-    workflowId?: string;
-  };
+  data: ActionNodeData;
   isConnectable?: boolean;
   selected?: boolean;
 }
@@ -121,19 +125,19 @@ export default function ActionNode({
         });
 
         // Update the node ID in the UI to match the database ID
-        setNodes((nodes) => 
-          nodes.map((node) => 
-            node.id === newNodeId 
-              ? { ...node, id: createdNode.id } 
+        setNodes((nodes) =>
+          nodes.map((node) =>
+            node.id === newNodeId
+              ? { ...node, id: createdNode.id }
               : node
           )
         );
 
         // Update the edge in the UI to use the new node ID
-        setEdges((edges) => 
-          edges.map((edge) => 
-            edge.id === `${id}-${newNodeId}` 
-              ? { ...edge, id: `${id}-${createdNode.id}`, target: createdNode.id } 
+        setEdges((edges) =>
+          edges.map((edge) =>
+            edge.id === `${id}-${newNodeId}`
+              ? { ...edge, id: `${id}-${createdNode.id}`, target: createdNode.id }
               : edge
           )
         );
@@ -163,9 +167,9 @@ export default function ActionNode({
     setIsSheetOpen(true);
   };
 
-  const handleUpdateNodeData = (updatedData: any) => {
+  const handleUpdateNodeData = (updatedData: ActionNodeData) => {
     if (!id) return;
-    
+
     setNodes((nodes) =>
       nodes.map((node) => {
         if (node.id === id) {
@@ -188,8 +192,8 @@ export default function ActionNode({
   return (
     <div className="relative">
       {/* Main node */}
-      <div 
-        className={`bg-white rounded-xl shadow-sm p-4 hover:cursor-pointer border border-pink-400 ${selected ? 'ring-2 ring-pink-300' : ''}`} 
+      <div
+        className={`bg-white rounded-xl shadow-sm p-4 hover:cursor-pointer border border-pink-400 ${selected ? 'ring-2 ring-pink-300' : ''}`}
         style={{ width: '320px' }}
         onClick={handleNodeClick}
       >
@@ -205,7 +209,7 @@ export default function ActionNode({
               )}
             </div>
           </div>
-          <button 
+          <button
             className="text-gray-400 hover:text-gray-600 nodrag"
             onClick={(e) => {
               e.stopPropagation();
@@ -253,15 +257,15 @@ export default function ActionNode({
 
       {/* Action Node Sheet */}
       {isSheetOpen && (
-        <ActionNodeSheet 
-          isOpen={isSheetOpen} 
-          onClose={() => setIsSheetOpen(false)} 
+        <ActionNodeSheet
+          isOpen={isSheetOpen}
+          onClose={() => setIsSheetOpen(false)}
           data={{
             ...data,
             id: id || "",
             actionType: data.actionType || "direct-message"
-          }} 
-          onUpdate={handleUpdateNodeData} 
+          }}
+          onUpdate={handleUpdateNodeData}
         />
       )}
     </div>
