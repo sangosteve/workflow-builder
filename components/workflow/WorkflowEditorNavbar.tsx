@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, Play, Edit, ExternalLink, Pause, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-
+import { toast } from "sonner";
 
 interface WorkflowEditorNavbarProps {
   workflowId: string;
@@ -75,18 +75,23 @@ export default function WorkflowEditorNavbar({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to execute workflow");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to execute workflow");
       }
 
-      // Show success notification or feedback
-      console.log("Workflow executed successfully");
+      const result = await response.json();
+      toast.success("Workflow execution started", {
+        description: `Run ID: ${result.runId}`,
+      });
     } catch (error) {
       console.error("Error executing workflow:", error);
+      toast.error("Failed to execute workflow", {
+        description: (error as Error).message,
+      });
     } finally {
       setIsExecuting(false);
     }
   };
-
   // Render the publish/unpublish button based on workflow status
   const renderPublishButton = () => {
     if (publishState === "ACTIVE") {
