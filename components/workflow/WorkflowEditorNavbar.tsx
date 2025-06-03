@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, Play, Edit, ExternalLink, Pause, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+
 
 interface WorkflowEditorNavbarProps {
   workflowId: string;
@@ -28,7 +28,6 @@ export default function WorkflowEditorNavbar({
   isPublishing = false,
   className,
 }: WorkflowEditorNavbarProps) {
-  const router = useRouter();
   const [workflowName, setWorkflowName] = useState(initialWorkflowName);
   const [mode, setMode] = useState<"editor" | "run">("editor");
   const [isExecuting, setIsExecuting] = useState(false);
@@ -74,11 +73,11 @@ export default function WorkflowEditorNavbar({
       const response = await fetch(`/api/workflows/${workflowId}/execute`, {
         method: "POST",
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to execute workflow");
       }
-      
+
       // Show success notification or feedback
       console.log("Workflow executed successfully");
     } catch (error) {
@@ -92,8 +91,8 @@ export default function WorkflowEditorNavbar({
   const renderPublishButton = () => {
     if (publishState === "ACTIVE") {
       return (
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
           onClick={onUnpublish}
           disabled={isPublishing}
@@ -108,8 +107,8 @@ export default function WorkflowEditorNavbar({
       );
     } else if (publishState === "PAUSED") {
       return (
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700"
           onClick={onPublish}
           disabled={isPublishing}
@@ -125,8 +124,8 @@ export default function WorkflowEditorNavbar({
     } else {
       // Default DRAFT state
       return (
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700"
           onClick={onPublish}
           disabled={isPublishing}
@@ -149,7 +148,7 @@ export default function WorkflowEditorNavbar({
         <Link href="/workflows" className="text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-5 w-5" />
         </Link>
-        
+
         <div>
           <h1 className="font-semibold text-lg">{workflowName}</h1>
           <p className="text-xs text-muted-foreground">Workflow Editor</p>
@@ -186,8 +185,8 @@ export default function WorkflowEditorNavbar({
 
       {/* Right section - Action buttons */}
       <div className="flex items-center space-x-2">
-        <Button 
-          variant="default" 
+        <Button
+          variant="default"
           className="bg-green-600 hover:bg-green-700 text-white"
           onClick={handleExecute}
           disabled={isExecuting || publishState !== "ACTIVE"}
@@ -199,7 +198,7 @@ export default function WorkflowEditorNavbar({
           )}
           Execute
         </Button>
-        
+
         {renderPublishButton()}
       </div>
     </div>
