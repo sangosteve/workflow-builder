@@ -7,31 +7,38 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { WorkflowStatusBadge } from "@/components/WorkflowStatusBadge";
+import { EditWorkflowDialog } from "@/components/workflow/EditWorkflowDialog";
 
 interface WorkflowEditorNavbarProps {
   workflowId: string;
   initialWorkflowName?: string;
+  initialWorkflowDescription?: string;
   onModeChange?: (mode: "editor" | "run") => void;
   publishState?: "DRAFT" | "ACTIVE" | "PAUSED";
   onPublish?: () => Promise<void>;
   onUnpublish?: () => Promise<void>;
   isPublishing?: boolean;
   className?: string;
+  onWorkflowUpdated?: (workflow: { name: string; description?: string }) => void;
 }
 
 export default function WorkflowEditorNavbar({
   workflowId,
   initialWorkflowName = "Untitled Workflow",
+  initialWorkflowDescription = "",
   onModeChange,
   publishState = "DRAFT",
   onPublish,
   onUnpublish,
   isPublishing = false,
   className,
+  onWorkflowUpdated,
 }: WorkflowEditorNavbarProps) {
   const [workflowName, setWorkflowName] = useState(initialWorkflowName);
+  const [workflowDescription, setWorkflowDescription] = useState(initialWorkflowDescription);
   const [mode, setMode] = useState<"editor" | "run">("editor");
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Fetch workflow details when component mounts
   useEffect(() => {
@@ -41,6 +48,7 @@ export default function WorkflowEditorNavbar({
         if (response.ok) {
           const data = await response.json();
           setWorkflowName(data.name || initialWorkflowName);
+          setWorkflowDescription(data.description || initialWorkflowDescription);
         }
       } catch (error) {
         console.error("Error fetching workflow details:", error);
@@ -50,7 +58,7 @@ export default function WorkflowEditorNavbar({
     if (workflowId) {
       fetchWorkflowDetails();
     }
-  }, [workflowId, initialWorkflowName]);
+  }, [workflowId, initialWorkflowName, initialWorkflowDescription]);
 
   // Update workflow name when initialWorkflowName changes
   useEffect(() => {
@@ -58,6 +66,13 @@ export default function WorkflowEditorNavbar({
       setWorkflowName(initialWorkflowName);
     }
   }, [initialWorkflowName]);
+
+  // Update workflow description when initialWorkflowDescription changes
+  useEffect(() => {
+    if (initialWorkflowDescription) {
+      setWorkflowDescription(initialWorkflowDescription);
+    }
+  }, [initialWorkflowDescription]);
 
   // Handle mode change
   const handleModeChange = (newMode: "editor" | "run") => {
@@ -94,6 +109,18 @@ export default function WorkflowEditorNavbar({
     }
   };
   
+  // Handle workflow update
+  const handleWorkflowUpdated = (updatedWorkflow: { name: string; description?: string }) => {
+    setWorkflowName(updatedWorkflow.name);
+    if (updatedWorkflow.description !== undefined) {
+      setWorkflowDescription(updatedWorkflow.description);
+    }
+    
+    if (onWorkflowUpdated) {
+      onWorkflowUpdated(updatedWorkflow);
+    }
+  };
+
   // Render the publish/unpublish button based on workflow status
   const renderPublishButton = () => {
     if (publishState === "ACTIVE") {
@@ -157,9 +184,18 @@ export default function WorkflowEditorNavbar({
         </Link>
 
         <div className="flex items-center gap-2">
-          <div>
-            <h1 className="font-semibold text-lg">{workflowName}</h1>
-            <p className="text-xs text-muted-foreground">Workflow Editor</p>
+          <div className="flex items-center">
+            <div>
+              <h1 className="font-semibold text-lg">{workflowName}</h1>
+              <p className="text-xs text-muted-foreground">Workflow Editor</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
           </div>
           <WorkflowStatusBadge status={publishState} />
         </div>
@@ -211,6 +247,13 @@ export default function WorkflowEditorNavbar({
 
         {renderPublishButton()}
       </div>
+      <EditWorkflowDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        workflow={{ name: workflowName, description: workflowDescription }}
+        onWorkflowUpdated={handleWorkflowUpdated}
+        workflowId={workflowId}
+      />
     </div>
   );
 }
