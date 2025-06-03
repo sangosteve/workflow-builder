@@ -6,6 +6,7 @@ import { ChevronLeft, Play, Edit, ExternalLink, Pause, Loader2 } from "lucide-re
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { WorkflowStatusBadge } from "@/components/WorkflowStatusBadge";
 
 interface WorkflowEditorNavbarProps {
   workflowId: string;
@@ -92,6 +93,7 @@ export default function WorkflowEditorNavbar({
       setIsExecuting(false);
     }
   };
+  
   // Render the publish/unpublish button based on workflow status
   const renderPublishButton = () => {
     if (publishState === "ACTIVE") {
@@ -154,9 +156,12 @@ export default function WorkflowEditorNavbar({
           <ChevronLeft className="h-5 w-5" />
         </Link>
 
-        <div>
-          <h1 className="font-semibold text-lg">{workflowName}</h1>
-          <p className="text-xs text-muted-foreground">Workflow Editor</p>
+        <div className="flex items-center gap-2">
+          <div>
+            <h1 className="font-semibold text-lg">{workflowName}</h1>
+            <p className="text-xs text-muted-foreground">Workflow Editor</p>
+          </div>
+          <WorkflowStatusBadge status={publishState} />
         </div>
       </div>
 
