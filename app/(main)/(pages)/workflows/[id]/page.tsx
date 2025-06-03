@@ -13,6 +13,7 @@ const WorkflowPage = () => {
     const [editorMode, setEditorMode] = useState<"editor" | "run">("editor");
     const [workflowData, setWorkflowData] = useState<{
         name: string;
+        description: string;
         status: "DRAFT" | "ACTIVE" | "PAUSED";
     } | null>(null);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -100,7 +101,7 @@ const WorkflowPage = () => {
 
     if (isLoading) {
         return (
-            <div className="w-full flex-1 flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center">
                 <div className="text-lg">Loading workflow...</div>
             </div>
         );
@@ -108,28 +109,31 @@ const WorkflowPage = () => {
 
     if (error) {
         return (
-            <div className="w-full flex-1 flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center">
                 <div className="text-lg text-red-500">{error}</div>
             </div>
         );
     }
 
     return (
-        <div className="w-full flex-1 flex flex-col">
+        <div className="flex flex-col h-full">
             <WorkflowEditorNavbar
                 workflowId={workflowId}
                 initialWorkflowName={workflowData?.name}
-                onModeChange={handleModeChange}
+                initialWorkflowDescription={workflowData?.description}
                 publishState={workflowData?.status || "DRAFT"}
+                onModeChange={handleModeChange}
                 onPublish={handlePublish}
                 onUnpublish={handleUnpublish}
                 isPublishing={isPublishing}
             />
-            <WorkflowEditor
-                workflowId={workflowId}
-                readOnly={editorMode === "run"}
-                className="flex-1"
-            />
+            {/* This div takes up all remaining space and contains the editor */}
+            <div className="flex-1 h-[calc(100%-64px)]"> {/* Assuming navbar is 64px tall */}
+                <WorkflowEditor
+                    workflowId={workflowId}
+                    readOnly={editorMode === "run"}
+                />
+            </div>
         </div>
     );
 };

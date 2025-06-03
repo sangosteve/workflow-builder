@@ -52,22 +52,16 @@ export default function WorkflowEditor({
   onNodesChange: externalNodesChange,
   onEdgesChange: externalEdgesChange,
   readOnly = false,
-  className = "h-[calc(100vh-64px)]", // Default height assuming a 64px navbar
+  className = "", // Default to empty string
 }: WorkflowEditorProps) {
   // Use React Query hooks if workflowId is provided
   const {
     data: dbNodes,
-    // isLoading: isLoadingNodes, 
-    //error: nodesError 
   } = useWorkflowNodes(workflowId || '');
 
   const {
     data: dbEdges,
-    // isLoading: isLoadingEdges, 
-    //  error: edgesError 
   } = useWorkflowEdges(workflowId || '');
-
-  // const createEdgeMutation = useCreateEdge();
 
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
@@ -166,12 +160,12 @@ export default function WorkflowEditor({
   );
 
   if (_isLoading) {
-    return <div>Loading...</div>
+    return <div className={className}>Loading...</div>
   }
 
   return (
     <ReactFlowProvider>
-      <div className={className}>
+      <div className={`h-full w-full ${className}`}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -184,6 +178,7 @@ export default function WorkflowEditor({
           nodesDraggable={!readOnly}
           nodesConnectable={!readOnly}
           elementsSelectable={!readOnly}
+          style={{ width: '100%', height: '100%' }}
         >
           <Controls position="top-left" />
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
