@@ -1,6 +1,14 @@
 import React, { useCallback, useState } from "react";
-import { Handle, Position, useReactFlow, useNodeId } from "@xyflow/react";
-import { Instagram, MoreVertical, MessageCircle, Reply, UserPlus } from "lucide-react";
+import { Handle, Position, useReactFlow, Edge } from "@xyflow/react";
+import { cn } from "@/lib/utils";
+import { Badge } from "../ui/badge";
+import { MoreHorizontal, Trash2, Loader2, MessageCircle, Reply, UserPlus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import AddNodeButton from "../AddNodeButton";
 import ActionNodeSheet from "../ActionNodeSheet";
 import { createNode, createEdge } from "@/lib/api-hooks";
@@ -19,16 +27,18 @@ interface ActionNodeProps {
   data: ActionNodeData;
   isConnectable?: boolean;
   selected?: boolean;
+  id: string; // Add id prop to access the node's id
 }
 
 export default function ActionNode({
   data,
   isConnectable = true,
-  selected
+  selected,
+  id
 }: ActionNodeProps) {
-  const { setNodes, setEdges, getNode, getEdges } = useReactFlow();
-  const id = useNodeId();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { setNodes, setEdges, getNode, getEdges } = useReactFlow();
 
   // Check if this node has any outgoing connections
   const hasConnections = getEdges().some(edge => edge.source === id);
@@ -147,19 +157,67 @@ export default function ActionNode({
     }
   }, [id, getNode, setNodes, setEdges, data.workflowId]);
 
-  // Determine which icon to show based on action type
-  const getActionIcon = () => {
-    switch (data.actionType) {
-      case 'direct-message':
-        return <MessageCircle className="text-white size-5" />;
-      case 'reply-comment':
-        return <Reply className="text-white size-5" />;
-      case 'follow-user':
-        return <UserPlus className="text-white size-5" />;
-      default:
-        return <Instagram className="text-white size-5" />;
+  const handleDelete = useCallback(async () => {
+    if (!id) return;
+
+    setIsDeleting(true);
+    try {
+      // Get all edges connected to this node
+      const edges = getEdges();
+      const connectedEdges = edges.filter(
+        edge => edge.source === id || edge.target === id
+      );
+
+      // Find source and target nodes that were connected to this node
+      let sourceNodeId: string | null = null;
+      let targetNodeId: string | null = null;
+
+      connectedEdges.forEach(edge => {
+        if (edge.target === id) {
+          sourceNodeId = edge.source;
+        }
+        if (edge.source === id) {
+          targetNodeId = edge.target;
+        }
+      });
+
+      // Remove the node from the flow
+      setNodes(nodes => nodes.filter(node => node.id !== id));
+
+      // Remove all edges connected to this node
+      setEdges(edges => edges.filter(
+        edge => edge.source !== id && edge.target !== id
+      ));
+
+      // If both source and target nodes exist, create a new edge between them
+      if (sourceNodeId && targetNodeId) {
+        // Create a properly typed edge
+        const newEdge: Edge = {
+          id: `${sourceNodeId}-${targetNodeId}`,
+          source: sourceNodeId,
+          target: targetNodeId,
+          type: 'buttonedge',
+        };
+
+        setEdges(edges => [...edges, newEdge]);
+      }
+
+      // If we have a workflowId, delete the node from the database
+      if (data.workflowId) {
+        const response = await fetch(`/api/nodes/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete node from database');
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete node:", error);
+    } finally {
+      setIsDeleting(false);
     }
-  };
+  }, [id, getEdges, setNodes, setEdges, data.workflowId]);
 
   const handleNodeClick = (event: React.MouseEvent) => {
     // Prevent the click from propagating to the flow
@@ -186,6 +244,20 @@ export default function ActionNode({
     );
   };
 
+  // Determine which icon to show based on action type
+  const getActionIcon = () => {
+    switch (data.actionType) {
+      case 'direct-message':
+        return <MessageCircle className="text-white size-5" />;
+      case 'reply-comment':
+        return <Reply className="text-white size-5" />;
+      case 'follow-user':
+        return <UserPlus className="text-white size-5" />;
+      default:
+        return <></>; // Removed default icon to avoid redundancy with Badge
+    }
+  };
+
   // Display the message if available, otherwise show the status
   const displayStatus = data.message || data.status;
 
@@ -193,32 +265,74 @@ export default function ActionNode({
     <div className="relative">
       {/* Main node */}
       <div
-        className={`bg-white rounded-xl shadow-sm p-4 hover:cursor-pointer border border-pink-400 ${selected ? 'ring-2 ring-pink-300' : ''}`}
+        className={`bg-white rounded-xl shadow-sm p-4 hover:cursor-pointer border border-blue-400 ${selected ? 'ring-2 ring-blue-300' : ''
+          }`}
         style={{ width: '320px' }}
         onClick={handleNodeClick}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-2 rounded-lg">
+            <div className="bg-gradient-to-tr from-blue-400 via-blue-500 to-blue-600 p-2 rounded-lg">
               {getActionIcon()}
             </div>
             <div className="flex flex-col">
-              <div className="font-medium">{data.label}</div>
-              {displayStatus && (
-                <div className="text-sm text-gray-600">{displayStatus}</div>
-              )}
+              <div className="font-medium">{data.label || 'Action'}</div>
             </div>
           </div>
-          <button
-            className="text-gray-400 hover:text-gray-600 nodrag"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Handle more options menu
-            }}
-          >
-            <MoreVertical size={18} />
-          </button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild disabled={isDeleting}>
+              <button
+                className="text-gray-400 hover:text-gray-600 nodrag"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <MoreHorizontal size={18} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete();
+                }}
+                className="text-red-600 focus:text-red-600"
+                disabled={isDeleting}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Delete</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
+        {data.message && (
+          <div className="mt-2 text-xs text-gray-500">{data.message}</div>
+        )}
+
+        {data.actionType && (
+          <div className="mt-2">
+            <Badge variant="outline" className="text-xs">
+              {data.actionType}
+            </Badge>
+          </div>
+        )}
+
+        <Handle
+          type="target"
+          position={Position.Top}
+          isConnectable={isConnectable}
+          className="opacity-0"
+          style={{ top: -1 }}
+        />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          isConnectable={isConnectable}
+          className="opacity-0"
+          style={{ bottom: -1 }}
+        />
       </div>
 
       {/* Connection line - only show if no connections */}
@@ -234,16 +348,6 @@ export default function ActionNode({
           <AddNodeButton onAddNode={handleAddNode} />
         </div>
       )}
-
-      {/* Input handle */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        id="in"
-        isConnectable={isConnectable}
-        className="opacity-0"
-        style={{ top: -1 }}
-      />
 
       {/* Output handle */}
       <Handle
