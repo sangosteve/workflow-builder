@@ -1,8 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { Handle, Position, useReactFlow, Edge } from "@xyflow/react";
-import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
-import { MoreHorizontal, Trash2, Loader2, MessageCircle, Reply, UserPlus } from "lucide-react";
+import { MoreHorizontal, Trash2, MessageCircle, Reply, UserPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -258,8 +257,6 @@ export default function ActionNode({
     }
   };
 
-  // Display the message if available, otherwise show the status
-  const displayStatus = data.message || data.status;
 
   return (
     <div className="relative">
