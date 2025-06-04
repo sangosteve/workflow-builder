@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { Handle, Position, useReactFlow, Edge } from "@xyflow/react";
 import { Badge } from "../ui/badge";
-import { MoreHorizontal, Trash2, MessageCircle, Reply, UserPlus, AlertCircle, CheckCircle, Clock, Database, FileText, GitBranch, Play, Users, X, Zap } from "lucide-react";
+import { MoreHorizontal, Trash2, MessageCircle, Reply, UserPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,13 +29,6 @@ interface ActionNodeProps {
   id: string; // Add id prop to access the node's id
 }
 
-interface ActionNodeSheetProps {
-  isOpen: boolean;
-  onClose: () => void;
-  data: ActionNodeData;
-  onUpdate: (updatedData: ActionNodeData) => void;
-}
-
 export default function ActionNode({
   data,
   isConnectable = true,
@@ -44,7 +37,6 @@ export default function ActionNode({
 }: ActionNodeProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
   const { setNodes, setEdges, getNode, getEdges } = useReactFlow();
 
   // Check if this node has any outgoing connections

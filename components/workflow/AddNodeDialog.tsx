@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { X, Play, GitBranch, MessageCircle, Reply, UserPlus, Clock, Database, FileText, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { Play, GitBranch, MessageCircle, Reply, UserPlus, Clock, Database } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 
 interface NodeOption {
@@ -80,7 +80,7 @@ export default function AddNodeDialog({ isOpen, onClose, onSelectNode }: AddNode
   const NodeCard = ({ node }: { node: NodeOption }) => {
     const IconComponent = node.icon;
     return (
-      <div 
+      <div
         onClick={() => handleNodeSelect(node.id)}
         className="p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:shadow-md transition-all duration-200 group"
       >
@@ -117,7 +117,7 @@ export default function AddNodeDialog({ isOpen, onClose, onSelectNode }: AddNode
             Choose a node type to add to your workflow
           </DialogDescription>
         </DialogHeader>
-        
+
         <Tabs defaultValue="action" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="action" className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export default function AddNodeDialog({ isOpen, onClose, onSelectNode }: AddNode
               </span>
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="action" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1">
               {actionNodes.map((node) => (
@@ -143,7 +143,7 @@ export default function AddNodeDialog({ isOpen, onClose, onSelectNode }: AddNode
               ))}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="condition" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1">
               {conditionNodes.map((node) => (
@@ -152,7 +152,7 @@ export default function AddNodeDialog({ isOpen, onClose, onSelectNode }: AddNode
             </div>
           </TabsContent>
         </Tabs>
-        
+
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
           <p className="text-sm text-gray-500">
             Select a node type to add it to your workflow
