@@ -52,7 +52,7 @@ interface Workflow {
     status: WorkflowStatus
     triggersCount: number
     actionsCount: number
-    lastEdited: string
+    // lastEdited: string
     createdAt: string
 }
 
@@ -245,7 +245,7 @@ const WorkflowsPage = () => {
                                     <TableHead>Status</TableHead>
                                     <TableHead>Triggers</TableHead>
                                     <TableHead>Actions</TableHead>
-                                    <TableHead>Last Edited</TableHead>
+                                    {/* <TableHead>Last Edited</TableHead> */}
                                     <TableHead className="text-right">Options</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -263,7 +263,7 @@ const WorkflowsPage = () => {
                                         <TableCell>{renderStatusBadge(workflow.status)}</TableCell>
                                         <TableCell>{workflow.triggersCount}</TableCell>
                                         <TableCell>{workflow.actionsCount}</TableCell>
-                                        <TableCell>{formatDate(workflow.lastEdited)}</TableCell>
+
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
