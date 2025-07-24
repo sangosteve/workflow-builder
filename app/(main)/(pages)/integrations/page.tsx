@@ -1,18 +1,16 @@
 "use client"
-
-import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import Image from "next/image"
 import { useIntegrations } from "../../../../hooks/use-integrations";
 
-type Integration = {
-    name: string
-    description: string
-    icon: string
-    connected: boolean
-    features?: { name: string; description: string; enabled: boolean }[]
-}
+// type Integration = {
+//     name: string
+//     description: string
+//     icon: string
+//     connected: boolean
+//     features?: { name: string; description: string; enabled: boolean }[]
+// }
 
 const ALL_INTEGRATIONS = [
     {

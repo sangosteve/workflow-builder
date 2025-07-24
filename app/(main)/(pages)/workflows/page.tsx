@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -52,13 +52,11 @@ interface Workflow {
     status: WorkflowStatus
     triggersCount: number
     actionsCount: number
-    // lastEdited: string
     createdAt: string
 }
 
 const WorkflowsPage = () => {
     const router = useRouter()
-    // State for dialog
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [newWorkflowName, setNewWorkflowName] = useState("")
     const [newWorkflowDescription, setNewWorkflowDescription] = useState("")
@@ -66,13 +64,7 @@ const WorkflowsPage = () => {
     const [isCreating, setIsCreating] = useState(false)
     const [workflows, setWorkflows] = useState<Workflow[]>([])
 
-    // Fetch workflows on component mount
-    useEffect(() => {
-        fetchWorkflows()
-    }, [])
-
-    // Function to fetch workflows from API
-    const fetchWorkflows = async () => {
+    const fetchWorkflows = useCallback(async () => {
         setIsLoading(true)
         try {
             const response = await fetch('/api/workflows')
@@ -86,19 +78,12 @@ const WorkflowsPage = () => {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [])
 
-    // Function to format date
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
-        return new Intl.DateTimeFormat('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        }).format(date)
-    }
+    useEffect(() => {
+        fetchWorkflows()
+    }, [fetchWorkflows])
 
-    // Function to render status badge with appropriate color
     const renderStatusBadge = (status: WorkflowStatus) => {
         switch (status) {
             case "ACTIVE":
@@ -112,7 +97,6 @@ const WorkflowsPage = () => {
         }
     }
 
-    // Function to handle workflow creation
     const handleCreateWorkflow = async () => {
         if (!newWorkflowName) return
 
@@ -126,7 +110,7 @@ const WorkflowsPage = () => {
                 body: JSON.stringify({
                     name: newWorkflowName,
                     description: newWorkflowDescription,
-                    createDefaultTrigger: true, // Add this flag to indicate we want a default trigger node
+                    createDefaultTrigger: true,
                 }),
             })
 
@@ -136,15 +120,12 @@ const WorkflowsPage = () => {
 
             const newWorkflow = await response.json()
 
-            // Refresh workflows list
             await fetchWorkflows()
 
-            // Reset form and close dialog
             setNewWorkflowName("")
             setNewWorkflowDescription("")
             setIsDialogOpen(false)
 
-            // Navigate to the new workflow editor
             router.push(`/workflows/${newWorkflow.id}`)
         } catch (error) {
             console.error('Error creating workflow:', error)
@@ -161,7 +142,6 @@ const WorkflowsPage = () => {
                     <p className="text-muted-foreground mt-1">Manage your automated workflows</p>
                 </div>
 
-                {/* Create Workflow Dialog */}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
                         <Button>
@@ -245,7 +225,6 @@ const WorkflowsPage = () => {
                                     <TableHead>Status</TableHead>
                                     <TableHead>Triggers</TableHead>
                                     <TableHead>Actions</TableHead>
-                                    {/* <TableHead>Last Edited</TableHead> */}
                                     <TableHead className="text-right">Options</TableHead>
                                 </TableRow>
                             </TableHeader>

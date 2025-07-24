@@ -1,9 +1,10 @@
 "use client";
-import { useParams } from 'next/navigation';
-import WorkflowEditor from '@/components/WorkflowEditor';
-import WorkflowEditorNavbar from '@/components/workflow/WorkflowEditorNavbar';
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { useParams } from 'next/navigation';
+import WorkflowEditorNavbar from '@/components/workflow/WorkflowEditorNavbar';
+import WorkflowEditor from '@/components/WorkflowEditor';
 
 const WorkflowPage = () => {
     const params = useParams();
@@ -18,8 +19,7 @@ const WorkflowPage = () => {
     } | null>(null);
     const [isPublishing, setIsPublishing] = useState(false);
 
-    // Fetch workflow data
-    const fetchWorkflow = async () => {
+    const fetchWorkflow = useCallback(async () => {
         if (!workflowId) return;
 
         try {
@@ -35,11 +35,11 @@ const WorkflowPage = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [workflowId]);
 
     useEffect(() => {
         fetchWorkflow();
-    }, [workflowId]);
+    }, [fetchWorkflow]);
 
     const handleModeChange = (mode: "editor" | "run") => {
         setEditorMode(mode);
@@ -127,8 +127,7 @@ const WorkflowPage = () => {
                 onUnpublish={handleUnpublish}
                 isPublishing={isPublishing}
             />
-            {/* This div takes up all remaining space and contains the editor */}
-            <div className="flex-1 h-[calc(100%-64px)]"> {/* Assuming navbar is 64px tall */}
+            <div className="flex-1 h-[calc(100%-64px)]">
                 <WorkflowEditor
                     workflowId={workflowId}
                     readOnly={editorMode === "run"}
