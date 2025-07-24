@@ -81,29 +81,36 @@ export async function GET(req: NextRequest) {
     // Step 3: Save to DB (store short-lived access token)
     // Note: We're using a placeholder user ID here. You'll need to replace this
     // with actual user authentication once you implement it.
-    const placeholderUserId = "placeholder_user_id";
+// First, try to find an existing Instagram integration
+const existingIntegration = await prisma.integration.findFirst({
+  where: {
+    type: "INSTAGRAM"
+  }
+});
 
-    await prisma.integration.upsert({
-      where: {
-        userId_type: {
-          userId: placeholderUserId,
-          type: "INSTAGRAM",
-        },
-      },
-      update: {
-        accessToken: shortAccessToken,
-        externalUserId: instagramUserId,
-        username: instagramUsername,
-      },
-      create: {
-        userId: placeholderUserId,
-        type: "INSTAGRAM",
-        accessToken: shortAccessToken,
-        externalUserId: instagramUserId,
-        username: instagramUsername,
-      },
-    });
-
+if (existingIntegration) {
+  // If an integration exists, update it
+  await prisma.integration.update({
+    where: {
+      id: existingIntegration.id
+    },
+    data: {
+      accessToken: longAccessToken,
+      externalUserId: instagramUserId,
+      username: instagramUsername,
+    }
+  });
+} else {
+  // If no integration exists, create a new one
+  await prisma.integration.create({
+    data: {
+      type: "INSTAGRAM",
+      accessToken: longAccessToken,
+      externalUserId: instagramUserId,
+      username: instagramUsername,
+    }
+  });
+}
     // Step 4: Redirect to success page
     return NextResponse.redirect(
       new URL(`${process.env.NEXT_PUBLIC_BASE_URL}/integrations`, req.url)
