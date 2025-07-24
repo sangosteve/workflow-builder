@@ -15,6 +15,7 @@ import {
   LayoutTemplate,
   History,
   HelpCircle,
+  Plug,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -39,6 +40,12 @@ export default function Sidebar() {
       label: "Workflows",
       href: "/workflows",
       icon: <Workflow className="w-5 h-5" />,
+    },
+
+       {
+      label: "Integrations",
+      href: "/integrations",
+      icon: <Plug className="w-5 h-5" />,
     },
     {
       label: "Templates",
