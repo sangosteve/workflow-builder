@@ -67,6 +67,9 @@ export default function IntegrationsPage() {
     const handleConnect = (integrationType: string) => {
         // Implement connection logic here
         console.log(`Connecting to ${integrationType}`);
+         
+        window.location.href = "/api/instagram/connect";
+    
     }
 
     return (
