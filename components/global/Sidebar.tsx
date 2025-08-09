@@ -9,7 +9,6 @@ import {
   Home,
   Workflow,
   Settings,
-  User,
   ChevronLeft,
   ChevronRight,
   LayoutTemplate,
@@ -25,11 +24,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import { useClerk, useUser } from "@clerk/nextjs";
+import Image from "next/image";
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-
+ const { user } = useUser();
+  const { signOut } = useClerk();
+const handleLogout = () => {
+  signOut(() => {
+    // Redirect to home page or login page after logout
+    window.location.href = "/";
+  });
+};
   const navItems = [
     {
       label: "Dashboard",
@@ -142,7 +149,7 @@ export default function Sidebar() {
         ))}
 
         {/* User dropdown */}
-        <DropdownMenu>
+  <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -151,8 +158,24 @@ export default function Sidebar() {
                 collapsed && "justify-center px-0"
               )}
             >
-              <User className="h-5 w-5" />
-              {!collapsed && <span>Account</span>}
+              {user && user.imageUrl ? (
+                <Image
+                  src={user?.imageUrl}
+                  alt={user?.fullName || "User"}
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-medium text-gray-600">
+                    {user?.fullName?.[0] || "U"}
+                  </span>
+                </div>
+              )}
+              {!collapsed && (
+                <span className="truncate">{user?.fullName || "Account"}</span>
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -162,7 +185,9 @@ export default function Sidebar() {
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Notifications</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">Logout</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+  Logout
+</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
