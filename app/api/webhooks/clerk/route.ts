@@ -1,6 +1,17 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { Webhook } from "svix"; 
+
+interface ClerkWebhookEvent {
+  type: string;
+  data: {
+    id: string;
+    email_addresses?: { email_address: string }[];
+    first_name?: string;
+    last_name?: string;
+  };
+}
+
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
@@ -12,13 +23,16 @@ export async function POST(req: Request) {
 
   try {
     const wh = new Webhook(WEBHOOK_SECRET);
-    const evt = wh.verify(payload, headers) as any;
+    const evt = wh.verify(payload, headers) as ClerkWebhookEvent;
 
     if (evt.type === "user.created") {
       const { id, email_addresses, first_name, last_name } = evt.data;
       const email = email_addresses?.[0]?.email_address;
 
-      console.log("user created in clerk:",evt.data)
+      
+  if (!email) {
+    throw new Error("User email is missing from Clerk webhook data");
+  }
 
       await prisma.user.create({
         data: {
