@@ -1,85 +1,80 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { requireDbUser } from "@/lib/requireDbUser";
 
 export async function POST(request: Request) {
-	try {
-		const body = await request.json();
-		const { name, description, createDefaultTrigger } = body;
+  try {
+    const user = await requireDbUser("/sign-in"); // ensures logged-in user
+    const body = await request.json();
+    const { name, description, createDefaultTrigger } = body;
 
-		if (!name) {
-			return NextResponse.json(
-				{ error: "Workflow name is required" },
-				{ status: 400 }
-			);
-		}
+    if (!name) {
+      return NextResponse.json(
+        { error: "Workflow name is required" },
+        { status: 400 }
+      );
+    }
 
-		const workflow = await prisma.workflow.create({
-			data: {
-				name,
-				description: description || "",
-				status: "DRAFT",
-				// lastEdited: new Date(),
-			},
-		});
+    const workflow = await prisma.workflow.create({
+      data: {
+        name,
+        description: description || "",
+        status: "DRAFT",
+        userId: user.id, // link workflow to this user
+      },
+    });
 
-		// If createDefaultTrigger flag is true, create a default trigger node
-		if (createDefaultTrigger) {
-			// Create the node with its config in a single operation
-			await prisma.node.create({
-				data: {
-					workflowId: workflow.id,
-					type: "TRIGGER",
-					label: "Trigger",
-					positionX: 100,
-					positionY: 50,
-					config: {
-						create: {
-							// Use the config field which is of type Json
-							config: {
-								triggerType: "",
-								description: "Configure this trigger to start your workflow",
-							},
-						},
-					},
-				},
-			});
+    if (createDefaultTrigger) {
+      await prisma.node.create({
+        data: {
+          workflowId: workflow.id,
+          type: "TRIGGER",
+          label: "Trigger",
+          positionX: 100,
+          positionY: 50,
+          config: {
+            create: {
+              config: {
+                triggerType: "",
+                description:
+                  "Configure this trigger to start your workflow",
+              },
+            },
+          },
+        },
+      });
 
-			// Update the triggersCount in the workflow
-			await prisma.workflow.update({
-				where: { id: workflow.id },
-				data: { triggersCount: 1 },
-			});
-		}
+      await prisma.workflow.update({
+        where: { id: workflow.id },
+        data: { triggersCount: 1 },
+      });
+    }
 
-		return NextResponse.json(workflow, { status: 201 });
-	} catch (error) {
-		console.error("Error creating workflow:", error);
-		return NextResponse.json(
-			{ error: "Failed to create workflow", details: (error as Error).message },
-			{ status: 500 }
-		);
-	}
+    return NextResponse.json(workflow, { status: 201 });
+  } catch (error) {
+    console.error("Error creating workflow:", error);
+    return NextResponse.json(
+      { error: "Failed to create workflow", details: (error as Error).message },
+      { status: 500 }
+    );
+  }
 }
 
 export async function GET() {
-	try {
-		// First check database connection
-		await prisma.$connect();
+  try {
+    const user = await requireDbUser("/sign-in"); // ensures logged-in user
 
-		const workflows = await prisma.workflow.findMany({
-			// orderBy: {
-			// 	lastEdited: "desc",
-			// },
-		});
+    const workflows = await prisma.workflow.findMany({
+      where: { userId: user.id }, // only fetch user’s workflows
+      orderBy: { createdAt: "desc" },
+    });
 
-		return NextResponse.json(workflows);
-	} catch (error) {
-		console.error("Error fetching workflows:", error);
-		return NextResponse.json(
-			{ error: "Failed to fetch workflows", details: (error as Error).message },
-			{ status: 500 }
-		);
-	} finally {
-		await prisma.$disconnect();
-	}
+    return NextResponse.json(workflows);
+  } catch (error) {
+    console.error("Error fetching workflows:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch workflows", details: (error as Error).message },
+      { status: 500 }
+    );
+  }
 }
