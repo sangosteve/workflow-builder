@@ -11,6 +11,7 @@ import { prisma } from "./db";
  */
 export async function requireDbUser(redirectIfMissing?: string) {
   const { userId } = await auth();
+  console.log("userId",userId)
 
   if (!userId) {
     if (redirectIfMissing) redirect("/sign-in");
